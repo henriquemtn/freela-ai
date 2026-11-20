@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,13 +40,16 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Empresas</h1>
-        <Button asChild>
-          <Link href="/companies/new"><Plus /> Nova empresa</Link>
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Empresas"
+        description="Todos os leads e clientes ativos. Os do Limbo ficam na página própria."
+        actions={
+          <Button asChild>
+            <Link href="/companies/new"><Plus /> Nova empresa</Link>
+          </Button>
+        }
+      />
 
       <form className="flex flex-wrap gap-2">
         <Input name="q" defaultValue={q} placeholder="Buscar nome, categoria, notas…" className="w-72" />

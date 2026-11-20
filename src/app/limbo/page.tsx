@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { selectCls } from "@/components/badges";
@@ -17,11 +18,8 @@ export default async function LimboPage({ searchParams }: PageProps<"/limbo">) {
   });
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Limbo</h1>
-        <p className="text-sm text-muted-foreground">Leads rejeitados, perdidos ou descartados. O histórico fica preservado.</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader title="Limbo" description="Leads rejeitados, perdidos ou descartados. O histórico fica preservado." />
 
       <form className="flex gap-2">
         <select name="reason" defaultValue={r ?? ""} className={`${selectCls} w-56`}>

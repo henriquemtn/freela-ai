@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { connection } from "next/server";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -27,13 +28,16 @@ export default async function PipelinePage() {
   });
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Pipeline</h1>
-        <Button asChild>
-          <Link href="/companies/new"><Plus /> Nova empresa</Link>
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Pipeline"
+        description="Arraste os cards entre as etapas. Cada mudança fica na linha do tempo."
+        actions={
+          <Button asChild>
+            <Link href="/companies/new"><Plus /> Nova empresa</Link>
+          </Button>
+        }
+      />
       <Board cards={cards} now={new Date()} />
     </div>
   );
