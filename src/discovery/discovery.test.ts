@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { matchCompany, type CompanyKey } from "./dedupe";
 import { isSocialUrl, normalizeDomain, normalizeName, normalizePhone, presenceFromListing, websiteKey } from "./normalize";
 import { claudeDiscoverySchema, toFoundPlaces } from "./providers";
+import { preScore } from "./prescore";
 
 describe("normalize", () => {
   it("phones: digits with BR country code", () => {
@@ -102,5 +103,25 @@ describe("Claude discovery output", () => {
     );
     expect(a.websiteUrl).toBe("https://padaria.com.br");
     expect(a.sourceUrl).toBe("http://guia.com/x");
+  });
+});
+
+describe("preScore", () => {
+  const c = (o: Partial<{ websiteUrl: string | null; phone: string | null; address: string | null }>) => ({
+    websiteUrl: null, phone: null, address: null, ...o,
+  });
+
+  it("social-only with phone and address ranks highest", () => {
+    expect(preScore(c({ websiteUrl: "https://instagram.com/x", phone: "48 3333-4444", address: "Rua A" })).score).toBe(100);
+  });
+
+  it("no website alone stays low", () => {
+    expect(preScore(c({})).score).toBe(40);
+  });
+
+  it("an own website lowers the rank", () => {
+    const r = preScore(c({ websiteUrl: "https://padaria.com.br", phone: "1", address: "x" }));
+    expect(r.score).toBe(70);
+    expect(r.reasons).toEqual(["Já tem site", "Telefone", "Endereço", "Presença online ativa"]);
   });
 });
