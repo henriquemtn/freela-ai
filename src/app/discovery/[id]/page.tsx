@@ -9,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { isSocialUrl } from "@/discovery/normalize";
 import { CANDIDATE_STATUS_LABEL, DUPLICATE_REASON_LABEL, PROVIDER_LABEL, RUN_STATUS_LABEL } from "@/discovery/labels";
 import { matchCompany } from "@/discovery/dedupe";
+import { preScore } from "@/discovery/prescore";
+import { effectivePriority } from "@/core/pipeline";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,10 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
     db.company.findMany({ select: { id: true, name: true, city: true, phone: true, websiteUrl: true, provider: true, providerPlaceId: true } }),
   ]);
   const companyName = new Map(companies.map((c) => [c.id, c.name]));
+  // Preliminary ranking from search data; research gives the full score after promotion.
+  const ranked = candidates
+    .map((c) => ({ ...c, pre: preScore(c) }))
+    .sort((a, b) => b.pre.score - a.pre.score || a.name.localeCompare(b.name));
   const active = run.status === "queued" || run.status === "running";
   const waitingForWorker = run.status === "queued" && new Date().getTime() - run.createdAt.getTime() > 10_000;
 
@@ -94,13 +100,14 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
               <TableRow>
                 <TableHead className="w-8" />
                 <TableHead>Empresa</TableHead>
+                <TableHead>Score</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Site</TableHead>
                 <TableHead>Situação</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {candidates.map((c) => {
+              {ranked.map((c) => {
                 const pending = c.status === "pending";
                 const dup = pending ? matchCompany(c, companies) : null;
                 return (
@@ -118,6 +125,16 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">{[c.category, c.city, c.term !== c.category && `“${c.term}”`].filter(Boolean).join(" · ")}</div>
+                    </TableCell>
+                    <TableCell>
+                      {/* Band colors follow the priority bands (high 75+, medium 45+). */}
+                      <Badge
+                        title={c.pre.reasons.join(" · ")}
+                        variant={{ high: "default", medium: "outline", low: "secondary" }[effectivePriority({ manualPriority: null, generatedScore: c.pre.score }) ?? "low"] as "default" | "outline" | "secondary"}
+                        className="tabular-nums"
+                      >
+                        {c.pre.score}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">{c.phone}</TableCell>
                     <TableCell className="max-w-56">
@@ -155,6 +172,7 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
       )}
 
       <p className="text-xs text-muted-foreground">
+        O score aqui usa só os dados da busca (site, telefone, endereço); o score completo vem da pesquisa depois de adicionar.
         “Sem site encontrado” vem só da busca, não é prova de que a empresa não tem site; a verificação acontece na pesquisa.
       </p>
     </div>
