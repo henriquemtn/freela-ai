@@ -6,7 +6,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { parseMoneyToCents } from "@/lib/format";
 import { opt, optDate, optEnum, parse } from "@/lib/form";
-import { ACTIVE_STAGES, reactivationTarget, transition } from "@/core/pipeline";
+import { ACTIVE_STAGES } from "@/core/pipeline";
+import { applyTransition, touchLastInteraction } from "@/lib/crm";
 import { ActivityType, Priority, RejectionReason, Stage, WebsiteStatus } from "@/generated/prisma/enums";
 
 const companySchema = z.object({
@@ -61,40 +62,21 @@ const stageSchema = z.object({
   note: opt.optional(),
 });
 
-// Applies a stage transition and logs it on the timeline, atomically.
-// "reactivate" resolves the target from the company's stage history.
-async function applyTransition(id: string, to: Stage | "reactivate", opts?: Parameters<typeof transition>[2]) {
-  await db.$transaction(async (tx) => {
-    const current = await tx.company.findUniqueOrThrow({ where: { id }, select: { stage: true } });
-    const target =
-      to === "reactivate"
-        ? reactivationTarget(
-            await tx.activity.findMany({
-              where: { companyId: id, type: "stage_change" },
-              orderBy: { occurredAt: "desc" },
-              select: { fromStage: true, toStage: true },
-            }),
-          )
-        : to;
-    const t = transition(current, target, opts);
-    await tx.company.update({ where: { id }, data: t.update });
-    await tx.activity.create({ data: { ...t.activity, companyId: id } });
-  });
-  refresh(id);
-}
-
 export async function changeStage(id: string, fd: FormData) {
   const { to, reason, note } = parse(stageSchema, fd);
   await applyTransition(id, to, { reason, note });
+  refresh(id);
 }
 
 /** Kanban drop: active stages only (Limbo needs a reason, set on the company page). */
 export async function moveCompany(id: string, to: Stage) {
   await applyTransition(id, z.enum(ACTIVE_STAGES).parse(to));
+  refresh(id);
 }
 
 export async function reactivate(id: string) {
   await applyTransition(id, "reactivate");
+  refresh(id);
 }
 
 export async function addContact(companyId: string, fd: FormData) {
@@ -121,17 +103,8 @@ const activitySchema = z.object({
 export async function addActivity(companyId: string, fd: FormData) {
   const { type, body, occurredAt } = parse(activitySchema, fd);
   const when = occurredAt ?? new Date();
-  await db.$transaction([
-    db.activity.create({ data: { companyId, type, body, occurredAt: when } }),
-    // Notes don't count as an interaction with the client.
-    ...(type === "note"
-      ? []
-      : [
-          db.company.updateMany({
-            where: { id: companyId, OR: [{ lastInteractionAt: null }, { lastInteractionAt: { lt: when } }] },
-            data: { lastInteractionAt: when },
-          }),
-        ]),
-  ]);
+  await db.activity.create({ data: { companyId, type, body, occurredAt: when } });
+  // Notes don't count as an interaction with the client.
+  if (type !== "note") await touchLastInteraction(companyId, when);
   refresh(companyId);
 }

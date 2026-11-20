@@ -1,6 +1,6 @@
-# FENIX
+# freela-ai
 
-Personal CRM + lead discovery. Full spec in [FENIX.md](FENIX.md); conventions in [CLAUDE.md](CLAUDE.md).
+Personal CRM + lead discovery. Full spec in [SPEC.md](SPEC.md); conventions in [CLAUDE.md](CLAUDE.md).
 
 ## Running locally
 
@@ -12,7 +12,25 @@ docker compose up -d        # optional: Postgres on port 5433
 pnpm install                # also generates the Prisma Client
 pnpm db:migrate             # apply migrations
 pnpm dev                    # http://localhost:3000
+pnpm worker                 # in another terminal: runs discovery searches
 ```
+
+After a migration (`pnpm db:migrate`), restart `pnpm dev`: the dev server keeps the
+previously generated Prisma Client in memory.
+
+Don't run `pnpm build` while `pnpm dev` is running: both write to `.next` and the dev
+server can end up serving stale code. If that happens, stop it, `rm -rf .next`, restart.
+
+### Lead discovery
+
+Discovery uses the **Claude CLI** (`claude`, already logged in) with web search; no
+external API key. The worker runs it non-interactively and restricted: empty temp
+directory, only WebSearch/WebFetch, no shell, no MCP servers, no app secrets in its
+environment, timeout and output limits, output validated with Zod. Every result must
+cite its source page; nothing enters the CRM without your approval.
+
+- Model: `FREELA_CLAUDE_MODEL` (default `sonnet`). Each term takes a few minutes.
+- Offline/demo: `FREELA_DISCOVERY_PROVIDER=sample` returns data labeled “[Exemplo]”.
 
 ## Scripts
 
@@ -21,6 +39,7 @@ pnpm dev                    # http://localhost:3000
 | `pnpm dev` | development server |
 | `pnpm test` | tests (Vitest); the db test needs `DATABASE_URL` |
 | `pnpm lint` | ESLint |
+| `pnpm worker` | background worker (discovery runs) |
 | `pnpm db:migrate` | create/apply migrations (`prisma migrate dev`) |
 | `pnpm build` | production build |
 
@@ -29,14 +48,19 @@ pnpm dev                    # http://localhost:3000
 - `prisma/schema.prisma` — `Company`, `Contact`, `Activity`, `Task` models
 - `src/core/pipeline.ts` — stage transitions, Limbo, priority rules (tested)
 - `src/core/tasks.ts` — due status and next-action rules (tested)
+- `src/discovery/` — provider adapter (Claude, sample), normalization, dedupe, run execution (tested)
+- `src/lib/claude.ts` — restricted Claude CLI execution adapter
+- `src/worker.ts` — polls Postgres for queued runs (`FOR UPDATE SKIP LOCKED`)
 - `src/app/companies/actions.ts` — server actions, validated with Zod
-- `src/app/` — pages: Overview, Pipeline (Kanban), Companies, Tasks, Limbo
+- `src/core/outreach.ts` — first-contact templates: variables, template choice, WhatsApp link (tested)
+- `src/lib/crm.ts` — shared server operations (stage transitions, next action, last interaction)
+- `src/app/` — pages: Overview, Discovery, Outreach, Pipeline (Kanban), Companies, Tasks, Limbo
 
 ## Status
 
 - [x] Phase 0 — foundation (Next.js 16, Tailwind 4, shadcn/ui, Prisma 7, Postgres)
 - [x] Phase 1 — core CRM: companies, contacts, timeline, stages, Limbo, search/filters
 - [x] Phase 2 — Kanban, tasks, dashboard
-- [ ] Phase 3 — Discovery
+- [x] Phase 3 — Discovery (Claude web search)
 - [ ] Phase 4 — Claude research
-- [ ] Phase 5 — Deals and outreach
+- [ ] Phase 5 — Deals and outreach (outreach templates done: draft, copy/WhatsApp, record + follow-up)

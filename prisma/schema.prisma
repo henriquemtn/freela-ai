@@ -76,13 +76,20 @@ model Company {
 
   notes String? // user-authored
 
+  // Discovery provenance; providerPlaceId only for providers with stable IDs.
+  provider        String?
+  providerPlaceId String?
+
   contacts   Contact[]
   activities Activity[]
   tasks      Task[]
 
+  discoveredAs DiscoveryCandidate[] @relation("PromotedFrom")
+
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
 
+  @@unique([provider, providerPlaceId])
   @@index([stage])
   @@index([name])
   @@index([city])
@@ -141,4 +148,80 @@ model Task {
 
   @@index([completedAt, dueAt])
   @@index([companyId])
+}
+
+enum RunStatus {
+  queued
+  running
+  completed
+  failed
+  cancelled
+}
+
+enum CandidateStatus {
+  pending
+  promoted
+  dismissed
+  duplicate // same provider place as an existing company
+}
+
+model DiscoveryRun {
+  id       String    @id @default(cuid())
+  provider String // "claude" | "sample"
+  area     String // e.g. "Florianópolis, SC"
+  terms    String[]
+  status   RunStatus @default(queued)
+
+  foundCount     Int     @default(0)
+  duplicateCount Int     @default(0)
+  failedCount    Int     @default(0)
+  error          String?
+
+  startedAt  DateTime? @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  candidates DiscoveryCandidate[]
+
+  @@index([status, createdAt])
+}
+
+// A search result awaiting review; becomes a Company only when the user promotes it.
+model DiscoveryCandidate {
+  id              String          @id @default(cuid())
+  runId           String
+  run             DiscoveryRun    @relation(fields: [runId], references: [id], onDelete: Cascade)
+  provider        String
+  providerPlaceId String
+  status          CandidateStatus @default(pending)
+  term            String
+
+  name       String
+  category   String?
+  address    String?
+  city       String?
+  state      String?
+  phone      String?
+  websiteUrl String?
+  sourceUrl  String? // page where the result was found
+
+  companyId String? // set once promoted or when an exact duplicate
+  company   Company? @relation("PromotedFrom", fields: [companyId], references: [id], onDelete: SetNull)
+
+  fetchedAt DateTime @default(now()) @db.Timestamptz
+
+  @@unique([runId, provider, providerPlaceId])
+  @@index([provider, providerPlaceId])
+  @@index([status, fetchedAt])
+}
+
+// First-contact message with {variables}; websiteStatus picks the default per company.
+model MessageTemplate {
+  id            String         @id @default(cuid())
+  name          String
+  body          String
+  websiteStatus WebsiteStatus?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
 }
