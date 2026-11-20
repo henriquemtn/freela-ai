@@ -32,6 +32,14 @@ cite its source page; nothing enters the CRM without your approval.
 - Model: `FREELA_CLAUDE_MODEL` (default `sonnet`). Each term takes a few minutes.
 - Offline/demo: `FREELA_DISCOVERY_PROVIDER=sample` returns data labeled “[Exemplo]”.
 
+### Lead research
+
+“Pesquisar com Claude” on a company (or “Adicionar e pesquisar” in Discovery) queues a
+research job for the worker. Instructions live in the project skill
+`.claude/skills/freela-business-research/SKILL.md` (also usable directly in Claude Code).
+Claude reports website status, contact channels, signals and opportunities with sources;
+the 0–100 score is computed in code from those signals (`src/research/score.ts`, spec §10).
+
 ## Scripts
 
 | Script | What it does |
@@ -39,7 +47,7 @@ cite its source page; nothing enters the CRM without your approval.
 | `pnpm dev` | development server |
 | `pnpm test` | tests (Vitest); the db test needs `DATABASE_URL` |
 | `pnpm lint` | ESLint |
-| `pnpm worker` | background worker (discovery runs) |
+| `pnpm worker` | background worker (discovery runs and research jobs) |
 | `pnpm db:migrate` | create/apply migrations (`prisma migrate dev`) |
 | `pnpm build` | production build |
 
@@ -50,6 +58,7 @@ cite its source page; nothing enters the CRM without your approval.
 - `src/core/tasks.ts` — due status and next-action rules (tested)
 - `src/discovery/` — provider adapter (Claude, sample), normalization, dedupe, run execution (tested)
 - `src/lib/claude.ts` — restricted Claude CLI execution adapter
+- `src/research/` — research output schema, explainable scoring (tested), job execution
 - `src/worker.ts` — polls Postgres for queued runs (`FOR UPDATE SKIP LOCKED`)
 - `src/app/companies/actions.ts` — server actions, validated with Zod
 - `src/core/outreach.ts` — first-contact templates: variables, template choice, WhatsApp link (tested)
@@ -62,5 +71,5 @@ cite its source page; nothing enters the CRM without your approval.
 - [x] Phase 1 — core CRM: companies, contacts, timeline, stages, Limbo, search/filters
 - [x] Phase 2 — Kanban, tasks, dashboard
 - [x] Phase 3 — Discovery (Claude web search)
-- [ ] Phase 4 — Claude research
+- [x] Phase 4 — Website verification and Claude research
 - [ ] Phase 5 — Deals and outreach (outreach templates done: draft, copy/WhatsApp, record + follow-up)

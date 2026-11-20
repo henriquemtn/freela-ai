@@ -14,6 +14,7 @@ import { formatBRL, formatDateTime } from "@/lib/format";
 import { addActivity, changeStage, reactivate } from "../actions";
 import { Contacts } from "./contacts";
 import { OutreachCard } from "./outreach";
+import { ResearchCard } from "./research";
 import { outreachVars, pickTemplate } from "@/core/outreach";
 import { NewTaskForm, TaskItem } from "@/components/tasks";
 
@@ -33,7 +34,11 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
     },
   });
   if (!c) notFound();
-  const templates = await db.messageTemplate.findMany({ orderBy: { createdAt: "asc" } });
+  const [templates, job, report] = await Promise.all([
+    db.messageTemplate.findMany({ orderBy: { createdAt: "asc" } }),
+    db.researchJob.findFirst({ where: { companyId: id }, orderBy: { createdAt: "desc" } }),
+    db.researchReport.findFirst({ where: { companyId: id }, orderBy: { createdAt: "desc" } }),
+  ]);
   const reachable = c.contacts.filter((ct) => !ct.optedOut);
 
   const inLimbo = c.stage === "rejected";
@@ -100,6 +105,8 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           </CardContent>
         </Card>
       )}
+
+      <ResearchCard companyId={id} job={job} report={report} contacts={c.contacts} manualPriority={c.manualPriority} />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">

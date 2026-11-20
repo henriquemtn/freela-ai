@@ -80,9 +80,11 @@ model Company {
   provider        String?
   providerPlaceId String?
 
-  contacts   Contact[]
-  activities Activity[]
-  tasks      Task[]
+  contacts        Contact[]
+  activities      Activity[]
+  tasks           Task[]
+  researchJobs    ResearchJob[]
+  researchReports ResearchReport[]
 
   discoveredAs DiscoveryCandidate[] @relation("PromotedFrom")
 
@@ -224,4 +226,46 @@ model MessageTemplate {
 
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
+}
+
+// Asynchronous Claude research of one company, processed by the worker.
+model ResearchJob {
+  id        String    @id @default(cuid())
+  companyId String
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  status    RunStatus @default(queued)
+  error     String?
+
+  startedAt  DateTime? @db.Timestamptz
+  finishedAt DateTime? @db.Timestamptz
+  createdAt  DateTime  @default(now()) @db.Timestamptz
+
+  report ResearchReport?
+
+  @@index([status, createdAt])
+  @@index([companyId])
+}
+
+// Validated research output. Detailed findings are JSON (shape enforced by
+// Zod in src/research/schema.ts); score is computed in code from the signals.
+model ResearchReport {
+  id        String       @id @default(cuid())
+  companyId String
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  jobId     String?      @unique
+  job       ResearchJob? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  websiteStatus  WebsiteStatus
+  websiteUrl     String?
+  confidence     Float // 0..1, as reported by the agent
+  summary        String
+  score          Int
+  scoreBreakdown Json
+  findings       Json // signals, opportunities, services, channels, sources, limitations
+
+  model     String?
+  costUsd   Float? // diagnostic metadata, not used for money arithmetic
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  @@index([companyId, createdAt])
 }

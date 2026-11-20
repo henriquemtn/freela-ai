@@ -38,8 +38,9 @@ function ids(fd: FormData) {
   return r.data;
 }
 
-/** Turns reviewed candidates into CRM companies (human approval per spec). */
-export async function promoteCandidates(runId: string, fd: FormData) {
+/** Turns reviewed candidates into CRM companies (human approval per spec). Returns the new company ids. */
+async function promote(runId: string, fd: FormData): Promise<string[]> {
+  const created: string[] = [];
   const candidates = await db.discoveryCandidate.findMany({ where: { id: { in: ids(fd) }, runId, status: "pending" } });
   for (const c of candidates) {
     await db.$transaction(async (tx) => {
@@ -78,8 +79,21 @@ export async function promoteCandidates(runId: string, fd: FormData) {
         },
       });
       await tx.discoveryCandidate.update({ where: { id: c.id }, data: { status: "promoted", companyId: company.id } });
+      created.push(company.id);
     });
   }
+  return created;
+}
+
+export async function promoteCandidates(runId: string, fd: FormData) {
+  await promote(runId, fd);
+  revalidatePath("/", "layout");
+}
+
+/** Promote and queue Claude research for each new company. */
+export async function promoteAndResearch(runId: string, fd: FormData) {
+  const companyIds = await promote(runId, fd);
+  if (companyIds.length) await db.researchJob.createMany({ data: companyIds.map((companyId) => ({ companyId })) });
   revalidatePath("/", "layout");
 }
 
