@@ -15,10 +15,10 @@ describe("transition", () => {
   });
 
   it("Limbo requires a reason and stores reason/note/closedAt", () => {
-    expect(() => transition({ stage: "contacted" }, "rejected")).toThrow(/reason/);
-    const r = transition({ stage: "contacted" }, "rejected", { reason: "no_budget", note: "back in March", now });
-    expect(r.update).toMatchObject({ stage: "rejected", rejectionReason: "no_budget", rejectionNote: "back in March", closedAt: now });
-    expect(r.activity.body).toBe("No budget — back in March");
+    expect(() => transition({ stage: "contacted" }, "rejected")).toThrow(/Motivo/);
+    const r = transition({ stage: "contacted" }, "rejected", { reason: "no_budget", note: "volta em março", now });
+    expect(r.update).toMatchObject({ stage: "rejected", rejectionReason: "no_budget", rejectionNote: "volta em março", closedAt: now });
+    expect(r.activity.body).toBe("Sem orçamento — volta em março");
   });
 
   it("completing sets closedAt; reopening clears it", () => {
@@ -29,7 +29,7 @@ describe("transition", () => {
   it("leaving Limbo clears the reason and notes the reactivation", () => {
     const r = transition({ stage: "rejected" }, "contacted", { now });
     expect(r.update.rejectionReason).toBeNull();
-    expect(r.activity.body).toBe("Reactivated from Limbo");
+    expect(r.activity.body).toBe("Reativada do Limbo");
   });
 });
 

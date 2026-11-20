@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 // ponytail: only areas that exist; Pipeline, Discovery, Tasks and Settings arrive with their phases.
 const items = [
-  { href: "/", label: "Overview", icon: LayoutDashboard },
-  { href: "/companies", label: "Companies", icon: Building2 },
+  { href: "/", label: "Visão geral", icon: LayoutDashboard },
+  { href: "/companies", label: "Empresas", icon: Building2 },
   { href: "/limbo", label: "Limbo", icon: Archive },
 ];
 

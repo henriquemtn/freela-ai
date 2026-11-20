@@ -22,7 +22,7 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
         {[...ACTIVE_STAGES, "rejected" as const].map((s) => (
@@ -39,10 +39,10 @@ export default async function OverviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader><CardTitle>Overdue actions</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Ações atrasadas</CardTitle></CardHeader>
           <CardContent>
             {overdue.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nothing overdue.</p>
+              <p className="text-sm text-muted-foreground">Nada atrasado.</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {overdue.map((c) => (
@@ -56,10 +56,10 @@ export default async function OverviewPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Recent activity</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Atividade recente</CardTitle></CardHeader>
           <CardContent>
             {recent.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No activity yet.</p>
+              <p className="text-sm text-muted-foreground">Sem atividades ainda.</p>
             ) : (
               <ul className="space-y-2 text-sm">
                 {recent.map((a) => (

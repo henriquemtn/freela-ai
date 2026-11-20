@@ -12,7 +12,7 @@ import { formatBRL, formatDateTime } from "@/lib/format";
 import { addActivity, changeStage, reactivate } from "../actions";
 import { Contacts } from "./contacts";
 
-const ACTIVITY_LABEL = { note: "Note", call: "Call", message: "Message", email: "Email", meeting: "Meeting", stage_change: "Stage" };
+const ACTIVITY_LABEL = { note: "Nota", call: "Ligação", message: "Mensagem", email: "E-mail", meeting: "Reunião", stage_change: "Estágio" };
 
 export default async function CompanyPage({ params }: PageProps<"/companies/[id]">) {
   const { id } = await params;
@@ -24,13 +24,13 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
 
   const inLimbo = c.stage === "rejected";
   const info: [string, React.ReactNode][] = [
-    ["Category", c.category],
-    ["Location", [c.address, c.city, c.state].filter(Boolean).join(", ")],
-    ["Phone", c.phone],
-    ["Website", c.websiteUrl && <a href={c.websiteUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">{c.websiteUrl}</a>],
-    ["Estimated value", c.estimatedValueCents != null && formatBRL(c.estimatedValueCents)],
-    ["Next action", c.nextActionAt && formatDateTime(c.nextActionAt)],
-    ["Last interaction", c.lastInteractionAt && formatDateTime(c.lastInteractionAt)],
+    ["Categoria", c.category],
+    ["Local", [c.address, c.city, c.state].filter(Boolean).join(", ")],
+    ["Telefone", c.phone],
+    ["Site", c.websiteUrl && <a href={c.websiteUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">{c.websiteUrl}</a>],
+    ["Valor estimado", c.estimatedValueCents != null && formatBRL(c.estimatedValueCents)],
+    ["Próxima ação", c.nextActionAt && formatDateTime(c.nextActionAt)],
+    ["Última interação", c.lastInteractionAt && formatDateTime(c.lastInteractionAt)],
     ["Score", c.generatedScore],
   ];
 
@@ -46,7 +46,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           </div>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/companies/${id}/edit`}><Pencil /> Edit</Link>
+          <Link href={`/companies/${id}/edit`}><Pencil /> Editar</Link>
         </Button>
       </div>
 
@@ -54,11 +54,11 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
         <Card className="border-destructive/40">
           <CardContent className="flex items-center justify-between gap-4">
             <div className="text-sm">
-              <span className="font-medium">In Limbo:</span> {c.rejectionReason && REJECTION_LABEL[c.rejectionReason]}
+              <span className="font-medium">No Limbo:</span> {c.rejectionReason && REJECTION_LABEL[c.rejectionReason]}
               {c.rejectionNote && <span className="text-muted-foreground"> — {c.rejectionNote}</span>}
             </div>
             <form action={reactivate.bind(null, id)}>
-              <Button type="submit" variant="secondary">Reactivate</Button>
+              <Button type="submit" variant="secondary">Reativar</Button>
             </form>
           </CardContent>
         </Card>
@@ -67,19 +67,19 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           <CardContent className="flex flex-wrap items-end gap-6">
             <form action={changeStage.bind(null, id)} className="flex items-center gap-2">
               <select name="to" required className={`${selectCls} w-48`} defaultValue="">
-                <option value="" disabled>Move to…</option>
+                <option value="" disabled>Mover para…</option>
                 {ACTIVE_STAGES.filter((s) => s !== c.stage).map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
               </select>
-              <Button type="submit">Move</Button>
+              <Button type="submit">Mover</Button>
             </form>
             <form action={changeStage.bind(null, id)} className="flex items-center gap-2">
               <input type="hidden" name="to" value="rejected" />
               <select name="reason" required className={`${selectCls} w-44`} defaultValue="">
-                <option value="" disabled>Reason…</option>
+                <option value="" disabled>Motivo…</option>
                 {Object.entries(REJECTION_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
               </select>
-              <Input name="note" placeholder="Note (optional)" className="w-56" />
-              <Button type="submit" variant="destructive">Send to Limbo</Button>
+              <Input name="note" placeholder="Observação (opcional)" className="w-56" />
+              <Button type="submit" variant="destructive">Mandar pro Limbo</Button>
             </form>
           </CardContent>
         </Card>
@@ -88,7 +88,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
         <div className="space-y-6">
           <Card>
-            <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Perfil</CardTitle></CardHeader>
             <CardContent>
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
                 {info.filter(([, v]) => v || v === 0).map(([k, v]) => (
@@ -105,17 +105,17 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Timeline</CardTitle></CardHeader>
+          <CardHeader><CardTitle>Linha do tempo</CardTitle></CardHeader>
           <CardContent className="space-y-6">
             <form action={addActivity.bind(null, id)} className="grid gap-2">
               <div className="flex gap-2">
                 <select name="type" className={`${selectCls} w-36`} defaultValue="note">
                   {(["note", "call", "message", "email", "meeting"] as const).map((t) => <option key={t} value={t}>{ACTIVITY_LABEL[t]}</option>)}
                 </select>
-                <Input name="occurredAt" type="datetime-local" className="w-52" title="When (empty = now)" />
+                <Input name="occurredAt" type="datetime-local" className="w-52" title="Quando (vazio = agora)" />
               </div>
-              <Textarea name="body" required rows={2} placeholder="What happened?" />
-              <Button type="submit" variant="secondary" className="justify-self-start">Log</Button>
+              <Textarea name="body" required rows={2} placeholder="O que aconteceu?" />
+              <Button type="submit" variant="secondary" className="justify-self-start">Registrar</Button>
             </form>
 
             <ol className="space-y-4 border-l border-border pl-4">
@@ -133,7 +133,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
               ))}
               <li className="relative text-xs text-muted-foreground">
                 <span className="absolute -left-[21px] top-1 size-2 rounded-full bg-border" />
-                Created {formatDateTime(c.createdAt)}
+                Cadastrada em {formatDateTime(c.createdAt)}
               </li>
             </ol>
           </CardContent>

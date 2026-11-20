@@ -3,23 +3,23 @@ import type { Priority, RejectionReason, Stage } from "@/generated/prisma/enums"
 export const ACTIVE_STAGES = ["potential", "contacted", "in_progress", "working", "completed"] as const satisfies Stage[];
 
 export const STAGE_LABEL: Record<Stage, string> = {
-  potential: "Potential client",
-  contacted: "Contact made",
-  in_progress: "In progress",
-  working: "Working",
-  completed: "Completed",
+  potential: "Potencial cliente",
+  contacted: "Contato feito",
+  in_progress: "Em andamento",
+  working: "Trabalhando",
+  completed: "Concluído",
   rejected: "Limbo",
 };
 
 export const REJECTION_LABEL: Record<RejectionReason, string> = {
-  no_interest: "No interest",
-  no_response: "No response",
-  already_has_provider: "Already has a provider",
-  no_budget: "No budget",
-  not_a_fit: "Not a fit",
-  invalid_business: "Invalid business",
-  duplicate: "Duplicate",
-  other: "Other",
+  no_interest: "Sem interesse",
+  no_response: "Sem resposta",
+  already_has_provider: "Já tem fornecedor",
+  no_budget: "Sem orçamento",
+  not_a_fit: "Não é o perfil",
+  invalid_business: "Negócio inválido",
+  duplicate: "Duplicado",
+  other: "Outro",
 };
 
 type Current = { stage: Stage };
@@ -32,8 +32,8 @@ type Opts = { reason?: RejectionReason | null; note?: string | null; now?: Date 
  */
 export function transition(current: Current, to: Stage, opts: Opts = {}) {
   const now = opts.now ?? new Date();
-  if (current.stage === to) throw new Error(`Company is already in "${STAGE_LABEL[to]}"`);
-  if (to === "rejected" && !opts.reason) throw new Error("A reason is required to move to Limbo");
+  if (current.stage === to) throw new Error(`Empresa já está em "${STAGE_LABEL[to]}"`);
+  if (to === "rejected" && !opts.reason) throw new Error("Motivo é obrigatório para mover ao Limbo");
 
   const leavingLimbo = current.stage === "rejected";
   const update = {
@@ -45,7 +45,7 @@ export function transition(current: Current, to: Stage, opts: Opts = {}) {
 
   let body: string | null = null;
   if (to === "rejected") body = REJECTION_LABEL[opts.reason!] + (opts.note ? ` — ${opts.note}` : "");
-  else if (leavingLimbo) body = "Reactivated from Limbo";
+  else if (leavingLimbo) body = "Reativada do Limbo";
 
   return {
     update,

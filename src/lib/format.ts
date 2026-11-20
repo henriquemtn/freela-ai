@@ -1,14 +1,14 @@
 import type { Priority, WebsiteStatus } from "@/generated/prisma/enums";
 
 export const WEBSITE_LABEL: Record<WebsiteStatus, string> = {
-  not_found: "No website",
-  social_only: "Social only",
-  outdated: "Outdated website",
-  active: "Active website",
-  unknown: "Not checked",
+  not_found: "Sem site",
+  social_only: "Só redes sociais",
+  outdated: "Site desatualizado",
+  active: "Site ativo",
+  unknown: "Não verificado",
 };
 
-export const PRIORITY_LABEL: Record<Priority, string> = { low: "Low", medium: "Medium", high: "High" };
+export const PRIORITY_LABEL: Record<Priority, string> = { low: "Baixa", medium: "Média", high: "Alta" };
 
 /** "1.500,50" | "1500.5" | "1500" → cents. Empty → null. No floats: works on the string. */
 export function parseMoneyToCents(input: string): number | null {
@@ -18,7 +18,7 @@ export function parseMoneyToCents(input: string): number | null {
   const m = s.match(/^(.*?)[.,](\d{1,2})$/);
   const [int, dec] = m ? [m[1], m[2].padEnd(2, "0")] : [s, "00"];
   s = int.replace(/[.,]/g, "");
-  if (!/^\d+$/.test(s)) throw new Error(`Invalid amount: ${input}`);
+  if (!/^\d+$/.test(s)) throw new Error(`Valor inválido: ${input}`);
   return Number(s) * 100 + Number(dec);
 }
 
@@ -26,7 +26,7 @@ export function centsToInput(cents: number | null) {
   return cents == null ? "" : (cents / 100).toFixed(2).replace(".", ",");
 }
 
-// Number/date format only (R$ 1.500,00 · 20/11/2026); UI text is English.
+// Brazilian number/date format: R$ 1.500,00 · 20/11/2026
 const LOCALE = "pt-BR";
 
 const brl = new Intl.NumberFormat(LOCALE, { style: "currency", currency: "BRL" });
