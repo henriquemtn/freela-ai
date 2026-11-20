@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,45 +40,48 @@ export default async function CompaniesPage({ searchParams }: PageProps<"/compan
   ]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Companies</h1>
-        <Button asChild>
-          <Link href="/companies/new"><Plus /> New company</Link>
-        </Button>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Empresas"
+        description="Todos os leads e clientes ativos. Os do Limbo ficam na página própria."
+        actions={
+          <Button asChild>
+            <Link href="/companies/new"><Plus /> Nova empresa</Link>
+          </Button>
+        }
+      />
 
       <form className="flex flex-wrap gap-2">
-        <Input name="q" defaultValue={q} placeholder="Search name, category, notes…" className="w-72" />
+        <Input name="q" defaultValue={q} placeholder="Buscar nome, categoria, notas…" className="w-72" />
         <select name="stage" defaultValue={stage ?? ""} className={`${selectCls} w-44`}>
-          <option value="">All stages</option>
+          <option value="">Todos os estágios</option>
           {ACTIVE_STAGES.map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
         </select>
         <select name="website" defaultValue={website ?? ""} className={`${selectCls} w-44`}>
-          <option value="">Any presence</option>
+          <option value="">Qualquer presença</option>
           {Object.entries(WEBSITE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
         </select>
         <select name="city" defaultValue={city} className={`${selectCls} w-44`}>
-          <option value="">All cities</option>
+          <option value="">Todas as cidades</option>
           {cities.map((c) => <option key={c.city} value={c.city!}>{c.city}</option>)}
         </select>
-        <Button type="submit" variant="secondary">Filter</Button>
+        <Button type="submit" variant="secondary">Filtrar</Button>
       </form>
 
       {companies.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
-          No companies found. <Link href="/companies/new" className="text-primary hover:underline">Add the first one</Link>
+          Nenhuma empresa encontrada. <Link href="/companies/new" className="text-primary hover:underline">Cadastrar a primeira</Link>
         </p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Stage</TableHead>
-              <TableHead>Presence</TableHead>
-              <TableHead>Priority</TableHead>
-              <TableHead className="text-right">Value</TableHead>
-              <TableHead>Next action</TableHead>
+              <TableHead>Empresa</TableHead>
+              <TableHead>Estágio</TableHead>
+              <TableHead>Presença</TableHead>
+              <TableHead>Prioridade</TableHead>
+              <TableHead className="text-right">Valor</TableHead>
+              <TableHead>Próxima ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

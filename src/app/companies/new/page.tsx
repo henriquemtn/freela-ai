@@ -1,10 +1,11 @@
 import { CompanyForm } from "../company-form";
+import { PageHeader } from "@/components/page-header";
 import { createCompany } from "../actions";
 
 export default function NewCompanyPage() {
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">New company</h1>
+    <div className="space-y-8">
+      <PageHeader title="Nova empresa" back={{ href: "/companies", label: "Empresas" }} />
       <CompanyForm action={createCompany} cancelHref="/companies" />
     </div>
   );

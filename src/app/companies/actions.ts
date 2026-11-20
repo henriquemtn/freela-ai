@@ -5,20 +5,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { parseMoneyToCents } from "@/lib/format";
-import { reactivationTarget, transition } from "@/core/pipeline";
+import { opt, optDate, optEnum, parse } from "@/lib/form";
+import { ACTIVE_STAGES } from "@/core/pipeline";
+import { applyTransition, touchLastInteraction } from "@/lib/crm";
 import { ActivityType, Priority, RejectionReason, Stage, WebsiteStatus } from "@/generated/prisma/enums";
 
-// Optional text field: "" becomes null.
-const opt = z.string().trim().transform((v) => v || null);
-const optEnum = <T extends Record<string, string>>(e: T) =>
-  z.union([z.literal(""), z.enum(e)]).optional().transform((v) => v || null);
-const optDate = z
-  .string()
-  .transform((v) => (v ? new Date(v) : null)) // ponytail: datetime-local parsed in the server's timezone; fine while the app runs locally
-  .refine((v) => v === null || !isNaN(v.getTime()), "Invalid date");
-
 const companySchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
+  name: z.string().trim().min(1, "Nome é obrigatório"),
   category: opt,
   city: opt,
   state: opt,
@@ -28,7 +21,6 @@ const companySchema = z.object({
   websiteStatus: z.enum(WebsiteStatus),
   manualPriority: optEnum(Priority),
   estimatedValue: z.string().transform(parseMoneyToCents),
-  nextActionAt: optDate,
   notes: opt,
 });
 
@@ -40,14 +32,7 @@ const contactSchema = z.object({
   source: opt,
   notes: opt,
   optedOut: z.literal("on").optional().transform(Boolean),
-}).refine((c) => c.name || c.phone || c.email, "Provide a name, phone or email");
-
-// Validates FormData; failures become a readable message for error.tsx.
-function parse<S extends z.ZodType>(schema: S, fd: FormData): z.output<S> {
-  const r = schema.safeParse(Object.fromEntries(fd));
-  if (!r.success) throw new Error(z.prettifyError(r.error));
-  return r.data;
-}
+}).refine((c) => c.name || c.phone || c.email, "Informe nome, telefone ou e-mail");
 
 function parseCompany(fd: FormData) {
   const { estimatedValue, ...rest } = parse(companySchema, fd);
@@ -79,27 +64,18 @@ const stageSchema = z.object({
 
 export async function changeStage(id: string, fd: FormData) {
   const { to, reason, note } = parse(stageSchema, fd);
-  await db.$transaction(async (tx) => {
-    const current = await tx.company.findUniqueOrThrow({ where: { id }, select: { stage: true } });
-    const t = transition(current, to, { reason, note });
-    await tx.company.update({ where: { id }, data: t.update });
-    await tx.activity.create({ data: { ...t.activity, companyId: id } });
-  });
+  await applyTransition(id, to, { reason, note });
+  refresh(id);
+}
+
+/** Kanban drop: active stages only (Limbo needs a reason, set on the company page). */
+export async function moveCompany(id: string, to: Stage) {
+  await applyTransition(id, z.enum(ACTIVE_STAGES).parse(to));
   refresh(id);
 }
 
 export async function reactivate(id: string) {
-  await db.$transaction(async (tx) => {
-    const current = await tx.company.findUniqueOrThrow({ where: { id }, select: { stage: true } });
-    const history = await tx.activity.findMany({
-      where: { companyId: id, type: "stage_change" },
-      orderBy: { occurredAt: "desc" },
-      select: { fromStage: true, toStage: true },
-    });
-    const t = transition(current, reactivationTarget(history));
-    await tx.company.update({ where: { id }, data: t.update });
-    await tx.activity.create({ data: { ...t.activity, companyId: id } });
-  });
+  await applyTransition(id, "reactivate");
   refresh(id);
 }
 
@@ -120,24 +96,15 @@ export async function deleteContact(id: string) {
 
 const activitySchema = z.object({
   type: z.enum(ActivityType).exclude(["stage_change"]),
-  body: z.string().trim().min(1, "Describe the activity"),
+  body: z.string().trim().min(1, "Descreva a atividade"),
   occurredAt: optDate,
 });
 
 export async function addActivity(companyId: string, fd: FormData) {
   const { type, body, occurredAt } = parse(activitySchema, fd);
   const when = occurredAt ?? new Date();
-  await db.$transaction([
-    db.activity.create({ data: { companyId, type, body, occurredAt: when } }),
-    // Notes don't count as an interaction with the client.
-    ...(type === "note"
-      ? []
-      : [
-          db.company.updateMany({
-            where: { id: companyId, OR: [{ lastInteractionAt: null }, { lastInteractionAt: { lt: when } }] },
-            data: { lastInteractionAt: when },
-          }),
-        ]),
-  ]);
+  await db.activity.create({ data: { companyId, type, body, occurredAt: when } });
+  // Notes don't count as an interaction with the client.
+  if (type !== "note") await touchLastInteraction(companyId, when);
   refresh(companyId);
 }

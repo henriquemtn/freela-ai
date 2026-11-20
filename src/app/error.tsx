@@ -7,7 +7,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
   return (
     <div className="space-y-4 py-12 text-center">
       <p className="text-sm text-destructive">{error.message}</p>
-      <Button variant="secondary" onClick={reset}>Try again</Button>
+      <Button variant="secondary" onClick={reset}>Tentar de novo</Button>
     </div>
   );
 }
