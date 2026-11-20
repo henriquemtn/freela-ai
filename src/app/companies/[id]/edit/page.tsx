@@ -9,7 +9,7 @@ export default async function EditCompanyPage({ params }: PageProps<"/companies/
   if (!company) notFound();
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Edit {company.name}</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">Editar {company.name}</h1>
       <CompanyForm action={updateCompany.bind(null, id)} company={company} cancelHref={`/companies/${id}`} />
     </div>
   );

@@ -15,10 +15,10 @@ const optEnum = <T extends Record<string, string>>(e: T) =>
 const optDate = z
   .string()
   .transform((v) => (v ? new Date(v) : null)) // ponytail: datetime-local parsed in the server's timezone; fine while the app runs locally
-  .refine((v) => v === null || !isNaN(v.getTime()), "Invalid date");
+  .refine((v) => v === null || !isNaN(v.getTime()), "Data inválida");
 
 const companySchema = z.object({
-  name: z.string().trim().min(1, "Name is required"),
+  name: z.string().trim().min(1, "Nome é obrigatório"),
   category: opt,
   city: opt,
   state: opt,
@@ -40,7 +40,7 @@ const contactSchema = z.object({
   source: opt,
   notes: opt,
   optedOut: z.literal("on").optional().transform(Boolean),
-}).refine((c) => c.name || c.phone || c.email, "Provide a name, phone or email");
+}).refine((c) => c.name || c.phone || c.email, "Informe nome, telefone ou e-mail");
 
 // Validates FormData; failures become a readable message for error.tsx.
 function parse<S extends z.ZodType>(schema: S, fd: FormData): z.output<S> {
@@ -120,7 +120,7 @@ export async function deleteContact(id: string) {
 
 const activitySchema = z.object({
   type: z.enum(ActivityType).exclude(["stage_change"]),
-  body: z.string().trim().min(1, "Describe the activity"),
+  body: z.string().trim().min(1, "Descreva a atividade"),
   occurredAt: optDate,
 });
 

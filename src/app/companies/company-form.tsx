@@ -28,55 +28,55 @@ export function CompanyForm({
   const c = company;
   return (
     <form action={action} className="grid max-w-3xl grid-cols-2 gap-4">
-      <Field label="Name *" wide>
+      <Field label="Nome *" wide>
         <Input name="name" required defaultValue={c?.name} autoFocus />
       </Field>
-      <Field label="Category">
-        <Input name="category" defaultValue={c?.category ?? ""} placeholder="Dental clinic" />
+      <Field label="Categoria">
+        <Input name="category" defaultValue={c?.category ?? ""} placeholder="Clínica odontológica" />
       </Field>
-      <Field label="Phone">
+      <Field label="Telefone">
         <Input name="phone" defaultValue={c?.phone ?? ""} />
       </Field>
-      <Field label="City">
+      <Field label="Cidade">
         <Input name="city" defaultValue={c?.city ?? "Florianópolis"} />
       </Field>
-      <Field label="State">
+      <Field label="UF">
         <Input name="state" defaultValue={c?.state ?? "SC"} maxLength={2} />
       </Field>
-      <Field label="Address" wide>
+      <Field label="Endereço" wide>
         <Input name="address" defaultValue={c?.address ?? ""} />
       </Field>
-      <Field label="Website">
+      <Field label="Site">
         <Input name="websiteUrl" type="url" defaultValue={c?.websiteUrl ?? ""} placeholder="https://" />
       </Field>
-      <Field label="Digital presence">
+      <Field label="Presença digital">
         <select name="websiteStatus" defaultValue={c?.websiteStatus ?? "unknown"} className={selectCls}>
           {Object.entries(WEBSITE_LABEL).map(([v, l]) => (
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
       </Field>
-      <Field label="Priority (manual)">
+      <Field label="Prioridade (manual)">
         <select name="manualPriority" defaultValue={c?.manualPriority ?? ""} className={selectCls}>
-          <option value="">Automatic</option>
+          <option value="">Automática</option>
           {Object.entries(PRIORITY_LABEL).map(([v, l]) => (
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
       </Field>
-      <Field label="Estimated value (R$)">
+      <Field label="Valor estimado (R$)">
         <Input name="estimatedValue" inputMode="decimal" defaultValue={centsToInput(c?.estimatedValueCents ?? null)} placeholder="1.500,00" />
       </Field>
-      <Field label="Next action">
+      <Field label="Próxima ação">
         <Input name="nextActionAt" type="datetime-local" defaultValue={toDateTimeLocal(c?.nextActionAt ?? null)} />
       </Field>
-      <Field label="Notes" wide>
+      <Field label="Notas" wide>
         <Textarea name="notes" rows={4} defaultValue={c?.notes ?? ""} />
       </Field>
       <div className="col-span-2 flex gap-2">
-        <Button type="submit">Save</Button>
+        <Button type="submit">Salvar</Button>
         <Button variant="ghost" asChild>
-          <Link href={cancelHref}>Cancel</Link>
+          <Link href={cancelHref}>Cancelar</Link>
         </Button>
       </div>
     </form>
