@@ -61,9 +61,10 @@ the 0–100 score is computed in code from those signals (`src/research/score.ts
 - `src/research/` — research output schema, explainable scoring (tested), job execution
 - `src/worker.ts` — polls Postgres for queued runs (`FOR UPDATE SKIP LOCKED`)
 - `src/app/companies/actions.ts` — server actions, validated with Zod
+- `src/core/deals.ts`, `followups.ts`, `analytics.ts` — deal effects, follow-up rules, revenue/funnel (tested)
 - `src/core/outreach.ts` — first-contact templates: variables, template choice, WhatsApp link (tested)
 - `src/lib/crm.ts` — shared server operations (stage transitions, next action, last interaction)
-- `src/app/` — pages: Overview, Discovery, Outreach, Pipeline (Kanban), Companies, Tasks, Limbo
+- `src/app/` — pages: Overview, Results, Discovery, Outreach, Pipeline (Kanban), Companies, Tasks, Limbo
 
 ## Status
 
@@ -72,4 +73,4 @@ the 0–100 score is computed in code from those signals (`src/research/score.ts
 - [x] Phase 2 — Kanban, tasks, dashboard
 - [x] Phase 3 — Discovery (Claude web search)
 - [x] Phase 4 — Website verification and Claude research
-- [ ] Phase 5 — Deals and outreach (outreach templates done: draft, copy/WhatsApp, record + follow-up)
+- [x] Phase 5 — Deals, outreach, follow-up suggestions, results (revenue and conversion)

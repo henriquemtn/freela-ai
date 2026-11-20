@@ -49,6 +49,7 @@ export async function recordOutreach(companyId: string, fd: FormData) {
     data: { companyId, type: channel === "email" ? "email" : "message", body: `Abordagem via ${CHANNELS[channel]}:\n\n${body}`, occurredAt: now },
   });
   await touchLastInteraction(companyId, now);
+  await db.company.update({ where: { id: companyId }, data: { outreachDraft: null } }); // sent: draft is done
   if (moveStage && company.stage === "potential") await applyTransition(companyId, "contacted");
   if (followUp) {
     const due = new Date(now.getFullYear(), now.getMonth(), now.getDate() + FOLLOW_UP_DAYS, 10, 0);
@@ -56,4 +57,18 @@ export async function recordOutreach(companyId: string, fd: FormData) {
     await syncNextAction(companyId);
   }
   revalidatePath("/", "layout");
+}
+
+const draftSchema = z.object({ body: z.string().trim().max(5000) });
+
+/** Keeps an unsent message for later; an empty body clears it. */
+export async function saveOutreachDraft(companyId: string, fd: FormData) {
+  const { body } = parse(draftSchema, fd);
+  await db.company.update({ where: { id: companyId }, data: { outreachDraft: body || null } });
+  revalidatePath(`/companies/${companyId}`);
+}
+
+export async function discardOutreachDraft(companyId: string) {
+  await db.company.update({ where: { id: companyId }, data: { outreachDraft: null } });
+  revalidatePath(`/companies/${companyId}`);
 }

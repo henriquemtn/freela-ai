@@ -4,6 +4,9 @@ import { connection } from "next/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TaskItem } from "@/components/tasks";
 import { ACTIVE_STAGES, STAGE_LABEL } from "@/core/pipeline";
+import { pipelineValueCents } from "@/core/deals";
+import { followUpSuggestions } from "@/core/followups";
+import { FollowUpSuggestions } from "@/components/follow-up-suggestions";
 import { db } from "@/lib/db";
 import { formatBRL, formatDate, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -29,15 +32,43 @@ export default async function OverviewPage() {
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const include = { company: { select: { id: true, name: true } } };
 
-  const [byStage, openValue, dueTasks, overdueCount, recentActivity, recentCompanies, researching] = await Promise.all([
+  const [byStage, openValue, dueTasks, overdueCount, recentActivity, recentCompanies, researching, followUpRows] = await Promise.all([
     db.company.groupBy({ by: ["stage"], _count: true }),
-    db.company.aggregate({ where: { stage: { in: [...OPEN_STAGES] } }, _sum: { estimatedValueCents: true } }),
+    db.company.findMany({
+      where: { stage: { in: [...OPEN_STAGES] } },
+      select: { stage: true, estimatedValueCents: true, deals: { select: { status: true, valueCents: true } } },
+    }),
     db.task.findMany({ where: { completedAt: null, dueAt: { lt: endOfToday } }, orderBy: { dueAt: "asc" }, take: 15, include }),
     db.task.count({ where: { completedAt: null, dueAt: { lt: now } } }),
     db.activity.findMany({ orderBy: { occurredAt: "desc" }, take: 8, include: { company: { select: { name: true } } } }),
     db.company.findMany({ orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, city: true, createdAt: true } }),
     db.researchJob.count({ where: { status: { in: ["queued", "running"] } } }),
+    db.company.findMany({
+      where: { stage: { in: ["contacted", "in_progress", "working", "completed"] } },
+      select: {
+        id: true,
+        name: true,
+        stage: true,
+        createdAt: true,
+        lastInteractionAt: true,
+        deals: { where: { status: "proposal" }, select: { proposalSentAt: true }, orderBy: { proposalSentAt: "asc" }, take: 1 },
+        _count: { select: { tasks: { where: { completedAt: null } }, activities: { where: { type: { in: ["message", "email", "call"] } } } } },
+      },
+    }),
   ]);
+  const suggestions = followUpSuggestions(
+    followUpRows.map((c) => ({
+      id: c.id,
+      name: c.name,
+      stage: c.stage,
+      createdAt: c.createdAt,
+      lastInteractionAt: c.lastInteractionAt,
+      hasOpenTask: c._count.tasks > 0,
+      contactAttempts: c._count.activities,
+      proposalSentAt: c.deals[0]?.proposalSentAt ?? null,
+    })),
+    now,
+  ).slice(0, 10);
   const count = (s: string) => byStage.find((r) => r.stage === s)?._count ?? 0;
   const activeLeads = OPEN_STAGES.reduce((n, s) => n + count(s), 0);
 
@@ -56,7 +87,7 @@ export default async function OverviewPage() {
         <Stat label="Leads ativos" value={activeLeads} href="/pipeline" />
         <Stat label="Em negociação" value={count("in_progress")} href="/companies?stage=in_progress" />
         <Stat label="Clientes ativos" value={count("working")} href="/companies?stage=working" />
-        <Stat label="Valor em aberto (estimado)" value={formatBRL(openValue._sum.estimatedValueCents ?? 0)} />
+        <Stat label="Valor em aberto" value={formatBRL(pipelineValueCents(openValue))} />
         <Stat label="Tarefas atrasadas" value={overdueCount} href="/tasks" alert={overdueCount > 0} />
       </div>
 
@@ -74,6 +105,7 @@ export default async function OverviewPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <FollowUpSuggestions suggestions={suggestions} />
         <Card>
           <CardHeader>
             <CardTitle>Para hoje</CardTitle>

@@ -39,3 +39,11 @@ export async function deleteTask(id: string) {
   const t = await db.task.delete({ where: { id } });
   await afterChange(t.companyId);
 }
+
+/** One-click follow-up from a suggestion: tomorrow at 10:00. */
+export async function createFollowUp(companyId: string, label: string) {
+  const now = new Date();
+  const due = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 10, 0);
+  const t = await db.task.create({ data: { companyId, title: z.string().trim().min(1).max(200).parse(label), dueAt: due } });
+  await afterChange(t.companyId);
+}
