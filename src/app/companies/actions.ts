@@ -5,17 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { parseMoneyToCents } from "@/lib/format";
-import { reactivationTarget, transition } from "@/core/pipeline";
+import { opt, optDate, optEnum, parse } from "@/lib/form";
+import { ACTIVE_STAGES, reactivationTarget, transition } from "@/core/pipeline";
 import { ActivityType, Priority, RejectionReason, Stage, WebsiteStatus } from "@/generated/prisma/enums";
-
-// Optional text field: "" becomes null.
-const opt = z.string().trim().transform((v) => v || null);
-const optEnum = <T extends Record<string, string>>(e: T) =>
-  z.union([z.literal(""), z.enum(e)]).optional().transform((v) => v || null);
-const optDate = z
-  .string()
-  .transform((v) => (v ? new Date(v) : null)) // ponytail: datetime-local parsed in the server's timezone; fine while the app runs locally
-  .refine((v) => v === null || !isNaN(v.getTime()), "Data inválida");
 
 const companySchema = z.object({
   name: z.string().trim().min(1, "Nome é obrigatório"),
@@ -28,7 +20,6 @@ const companySchema = z.object({
   websiteStatus: z.enum(WebsiteStatus),
   manualPriority: optEnum(Priority),
   estimatedValue: z.string().transform(parseMoneyToCents),
-  nextActionAt: optDate,
   notes: opt,
 });
 
@@ -41,13 +32,6 @@ const contactSchema = z.object({
   notes: opt,
   optedOut: z.literal("on").optional().transform(Boolean),
 }).refine((c) => c.name || c.phone || c.email, "Informe nome, telefone ou e-mail");
-
-// Validates FormData; failures become a readable message for error.tsx.
-function parse<S extends z.ZodType>(schema: S, fd: FormData): z.output<S> {
-  const r = schema.safeParse(Object.fromEntries(fd));
-  if (!r.success) throw new Error(z.prettifyError(r.error));
-  return r.data;
-}
 
 function parseCompany(fd: FormData) {
   const { estimatedValue, ...rest } = parse(companySchema, fd);
@@ -77,30 +61,40 @@ const stageSchema = z.object({
   note: opt.optional(),
 });
 
-export async function changeStage(id: string, fd: FormData) {
-  const { to, reason, note } = parse(stageSchema, fd);
+// Applies a stage transition and logs it on the timeline, atomically.
+// "reactivate" resolves the target from the company's stage history.
+async function applyTransition(id: string, to: Stage | "reactivate", opts?: Parameters<typeof transition>[2]) {
   await db.$transaction(async (tx) => {
     const current = await tx.company.findUniqueOrThrow({ where: { id }, select: { stage: true } });
-    const t = transition(current, to, { reason, note });
+    const target =
+      to === "reactivate"
+        ? reactivationTarget(
+            await tx.activity.findMany({
+              where: { companyId: id, type: "stage_change" },
+              orderBy: { occurredAt: "desc" },
+              select: { fromStage: true, toStage: true },
+            }),
+          )
+        : to;
+    const t = transition(current, target, opts);
     await tx.company.update({ where: { id }, data: t.update });
     await tx.activity.create({ data: { ...t.activity, companyId: id } });
   });
   refresh(id);
 }
 
+export async function changeStage(id: string, fd: FormData) {
+  const { to, reason, note } = parse(stageSchema, fd);
+  await applyTransition(id, to, { reason, note });
+}
+
+/** Kanban drop: active stages only (Limbo needs a reason, set on the company page). */
+export async function moveCompany(id: string, to: Stage) {
+  await applyTransition(id, z.enum(ACTIVE_STAGES).parse(to));
+}
+
 export async function reactivate(id: string) {
-  await db.$transaction(async (tx) => {
-    const current = await tx.company.findUniqueOrThrow({ where: { id }, select: { stage: true } });
-    const history = await tx.activity.findMany({
-      where: { companyId: id, type: "stage_change" },
-      orderBy: { occurredAt: "desc" },
-      select: { fromStage: true, toStage: true },
-    });
-    const t = transition(current, reactivationTarget(history));
-    await tx.company.update({ where: { id }, data: t.update });
-    await tx.activity.create({ data: { ...t.activity, companyId: id } });
-  });
-  refresh(id);
+  await applyTransition(id, "reactivate");
 }
 
 export async function addContact(companyId: string, fd: FormData) {

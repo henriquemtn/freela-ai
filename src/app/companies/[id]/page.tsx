@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { connection } from "next/server";
 import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,14 +12,22 @@ import { db } from "@/lib/db";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { addActivity, changeStage, reactivate } from "../actions";
 import { Contacts } from "./contacts";
+import { NewTaskForm, TaskItem } from "@/components/tasks";
 
 const ACTIVITY_LABEL = { note: "Nota", call: "Ligação", message: "Mensagem", email: "E-mail", meeting: "Reunião", stage_change: "Estágio" };
 
 export default async function CompanyPage({ params }: PageProps<"/companies/[id]">) {
   const { id } = await params;
+  await connection(); // task due status depends on "now"
+  const now = new Date();
   const c = await db.company.findUnique({
     where: { id },
-    include: { contacts: { orderBy: { createdAt: "asc" } }, activities: { orderBy: { occurredAt: "desc" } } },
+    include: {
+      contacts: { orderBy: { createdAt: "asc" } },
+      activities: { orderBy: { occurredAt: "desc" } },
+      // open tasks first (completedAt null sorts first), then by due date
+      tasks: { orderBy: [{ completedAt: { sort: "desc", nulls: "first" } }, { dueAt: { sort: "asc", nulls: "last" } }] },
+    },
   });
   if (!c) notFound();
 
@@ -99,6 +108,17 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
                 ))}
               </dl>
               {c.notes && <p className="mt-4 whitespace-pre-wrap border-t border-border pt-4 text-sm">{c.notes}</p>}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Tarefas</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {c.tasks.length > 0 && (
+                <ul className="divide-y divide-border">
+                  {c.tasks.map((t) => <TaskItem key={t.id} task={{ ...t, company: null }} now={now} />)}
+                </ul>
+              )}
+              <NewTaskForm companyId={id} />
             </CardContent>
           </Card>
           <Contacts companyId={id} contacts={c.contacts} />

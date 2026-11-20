@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, Building2, Flame, LayoutDashboard } from "lucide-react";
+import { Archive, Building2, CheckSquare, Columns3, Flame, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ponytail: only areas that exist; Pipeline, Discovery, Tasks and Settings arrive with their phases.
+// ponytail: only areas that exist; Discovery and Settings arrive with their phases.
 const items = [
   { href: "/", label: "Visão geral", icon: LayoutDashboard },
+  { href: "/pipeline", label: "Pipeline", icon: Columns3 },
   { href: "/companies", label: "Empresas", icon: Building2 },
+  { href: "/tasks", label: "Tarefas", icon: CheckSquare },
   { href: "/limbo", label: "Limbo", icon: Archive },
 ];
 
