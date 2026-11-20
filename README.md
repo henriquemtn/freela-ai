@@ -19,23 +19,24 @@ pnpm dev                    # http://localhost:3000
 | Script | What it does |
 |---|---|
 | `pnpm dev` | development server |
-| `pnpm test` | tests (Vitest) |
+| `pnpm test` | tests (Vitest); the db test needs `DATABASE_URL` |
 | `pnpm lint` | ESLint |
 | `pnpm db:migrate` | create/apply migrations (`prisma migrate dev`) |
 | `pnpm build` | production build |
 
 ## Layout
 
-- `prisma/schema.prisma` — `Company`, `Contact`, `Activity` models
+- `prisma/schema.prisma` — `Company`, `Contact`, `Activity`, `Task` models
 - `src/core/pipeline.ts` — stage transitions, Limbo, priority rules (tested)
+- `src/core/tasks.ts` — due status and next-action rules (tested)
 - `src/app/companies/actions.ts` — server actions, validated with Zod
-- `src/app/` — pages: Overview, Companies, Limbo
+- `src/app/` — pages: Overview, Pipeline (Kanban), Companies, Tasks, Limbo
 
 ## Status
 
 - [x] Phase 0 — foundation (Next.js 16, Tailwind 4, shadcn/ui, Prisma 7, Postgres)
 - [x] Phase 1 — core CRM: companies, contacts, timeline, stages, Limbo, search/filters
-- [ ] Phase 2 — Kanban, tasks, dashboard
+- [x] Phase 2 — Kanban, tasks, dashboard
 - [ ] Phase 3 — Discovery
 - [ ] Phase 4 — Claude research
 - [ ] Phase 5 — Deals and outreach

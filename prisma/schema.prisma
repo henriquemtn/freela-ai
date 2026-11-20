@@ -67,7 +67,7 @@ model Company {
   manualPriority Priority?
 
   estimatedValueCents Int?
-  nextActionAt        DateTime? @db.Timestamptz
+  nextActionAt        DateTime? @db.Timestamptz // cache: earliest open task dueAt
   lastInteractionAt   DateTime? @db.Timestamptz
 
   rejectionReason RejectionReason?
@@ -78,6 +78,7 @@ model Company {
 
   contacts   Contact[]
   activities Activity[]
+  tasks      Task[]
 
   createdAt DateTime @default(now()) @db.Timestamptz
   updatedAt DateTime @updatedAt @db.Timestamptz
@@ -123,4 +124,21 @@ model Activity {
   createdAt  DateTime @default(now()) @db.Timestamptz
 
   @@index([companyId, occurredAt])
+}
+
+model Task {
+  id        String   @id @default(cuid())
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title       String
+  notes       String?
+  dueAt       DateTime? @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([completedAt, dueAt])
+  @@index([companyId])
 }

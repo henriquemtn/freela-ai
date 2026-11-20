@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { selectCls } from "@/components/badges";
-import { centsToInput, PRIORITY_LABEL, toDateTimeLocal, WEBSITE_LABEL } from "@/lib/format";
+import { centsToInput, PRIORITY_LABEL, WEBSITE_LABEL } from "@/lib/format";
 import type { Company } from "@/generated/prisma/client";
 
 function Field({ label, children, wide }: { label: string; children: React.ReactNode; wide?: boolean }) {
@@ -66,9 +66,6 @@ export function CompanyForm({
       </Field>
       <Field label="Valor estimado (R$)">
         <Input name="estimatedValue" inputMode="decimal" defaultValue={centsToInput(c?.estimatedValueCents ?? null)} placeholder="1.500,00" />
-      </Field>
-      <Field label="Próxima ação">
-        <Input name="nextActionAt" type="datetime-local" defaultValue={toDateTimeLocal(c?.nextActionAt ?? null)} />
       </Field>
       <Field label="Notas" wide>
         <Textarea name="notes" rows={4} defaultValue={c?.notes ?? ""} />
