@@ -298,3 +298,10 @@ model Deal {
   @@index([companyId])
   @@index([status, closedAt])
 }
+
+// Small app-wide settings (e.g. monthly income goal), key -> JSON value.
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @db.Timestamptz
+}

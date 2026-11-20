@@ -18,6 +18,7 @@ import { ResearchCard } from "./research";
 import { DealsCard } from "./deals";
 import { outreachVars, pickTemplate } from "@/core/outreach";
 import { researchOutputSchema } from "@/research/schema";
+import { getProfile } from "@/lib/settings";
 import { NewTaskForm, TaskItem } from "@/components/tasks";
 
 const ACTIVITY_LABEL = { note: "Nota", call: "Ligação", message: "Mensagem", email: "E-mail", meeting: "Reunião", stage_change: "Estágio" };
@@ -37,10 +38,11 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
     },
   });
   if (!c) notFound();
-  const [templates, job, report] = await Promise.all([
+  const [templates, job, report, profile] = await Promise.all([
     db.messageTemplate.findMany({ orderBy: { createdAt: "asc" } }),
     db.researchJob.findFirst({ where: { companyId: id }, orderBy: { createdAt: "desc" } }),
     db.researchReport.findFirst({ where: { companyId: id }, orderBy: { createdAt: "desc" } }),
+    getProfile(),
   ]);
   const reachable = c.contacts.filter((ct) => !ct.optedOut);
   const parsedReport = report ? researchOutputSchema.safeParse(report.findings) : null;
@@ -156,7 +158,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
             vars={outreachVars(c, c.contacts, {
               opportunity: findings?.opportunities[0]?.title,
               service: findings?.suggestedServices[0]?.service,
-            })}
+            }, profile)}
             draft={c.outreachDraft}
             phone={c.phone ?? reachable.find((ct) => ct.phone)?.phone ?? null}
             websiteStatus={c.websiteStatus}

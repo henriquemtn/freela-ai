@@ -67,13 +67,22 @@ export function OutreachCard({
 
   const wa = whatsappUrl(phone, text);
   // Checked on the current text, so the warning clears once the user fills the gap by hand.
-  const missing = TEMPLATE_VARS.map((v) => v.key).filter((k) => text.includes(`{${k}}`));
-  const warnings = [
+  const PROFILE_VARS = ["meu_nome", "minha_profissao", "meu_portfolio"];
+  const unfilled = TEMPLATE_VARS.map((v) => v.key).filter((k) => text.includes(`{${k}}`));
+  const missingProfile = unfilled.filter((k) => PROFILE_VARS.includes(k));
+  const missing = unfilled.filter((k) => !PROFILE_VARS.includes(k));
+  const warnings: React.ReactNode[] = [
+    missingProfile.length > 0 && (
+      <>
+        Seus dados não estão preenchidos.{" "}
+        <Link href="/settings" className="underline">Preencher em Perfil</Link>
+      </>
+    ),
     optedOut && "Um contato desta empresa pediu para não ser contatado.",
     websiteStatus === "unknown" && "Presença não verificada: confira se a empresa realmente não tem site antes de enviar.",
-    text.includes("[seu nome]") && "Troque “[seu nome]” pelo seu nome (dá para fixar no modelo, em Abordagem).",
+    text.includes("[seu nome]") && "Troque “[seu nome]” pelo seu nome, ou use {meu_nome} no modelo.",
     missing.length > 0 && `Sem dados para: ${missing.map((m) => `{${m}}`).join(", ")}. Complete o texto antes de enviar.`,
-  ].filter(Boolean) as string[];
+  ].filter(Boolean);
 
   return (
     <Card>
@@ -91,8 +100,8 @@ export function OutreachCard({
 
         {warnings.length > 0 && (
           <ul className="space-y-1 rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-            {warnings.map((w) => (
-              <li key={w} className="flex gap-1.5"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> {w}</li>
+            {warnings.map((w, i) => (
+              <li key={i} className="flex gap-1.5"><AlertTriangle className="mt-0.5 size-3.5 shrink-0" /> <span>{w}</span></li>
             ))}
           </ul>
         )}
