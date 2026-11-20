@@ -2,12 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, ArrowRight, BriefcaseBusiness, Building2, CheckSquare, ChevronRight, Columns3, LayoutDashboard, MessageSquareText, Radar, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BriefcaseBusiness, Building2, ChartColumn, CheckSquare, ChevronRight, Columns3, LayoutDashboard, MessageSquareText, Radar, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ponytail: only areas that exist; Settings arrives when there is something to configure in the UI.
 const groups = [
-  { label: null, items: [{ href: "/", label: "Visão geral", icon: LayoutDashboard }] },
+  {
+    label: null,
+    items: [
+      { href: "/", label: "Visão geral", icon: LayoutDashboard },
+      { href: "/results", label: "Resultados", icon: ChartColumn },
+    ],
+  },
   {
     label: "Prospecção",
     items: [

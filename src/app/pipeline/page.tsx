@@ -9,7 +9,7 @@ import { Board } from "./board";
 
 export default async function PipelinePage() {
   await connection(); // always dynamic (overdue depends on "now")
-  const cards = await db.company.findMany({
+  const rows = await db.company.findMany({
     where: { stage: { in: [...ACTIVE_STAGES] } },
     orderBy: [{ nextActionAt: { sort: "asc", nulls: "last" } }, { updatedAt: "desc" }],
     select: {
@@ -24,8 +24,14 @@ export default async function PipelinePage() {
       estimatedValueCents: true,
       lastInteractionAt: true,
       nextActionAt: true,
+      deals: { where: { status: { in: ["open", "proposal"] } }, select: { valueCents: true } },
     },
   });
+  // Card value: open deals when there are any, else the company's estimate.
+  const cards = rows.map(({ deals, ...c }) => ({
+    ...c,
+    estimatedValueCents: deals.length ? deals.reduce((n, d) => n + (d.valueCents ?? 0), 0) : c.estimatedValueCents,
+  }));
 
   return (
     <div className="space-y-8">

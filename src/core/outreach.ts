@@ -7,6 +7,8 @@ export const TEMPLATE_VARS = [
   { key: "categoria", label: "Categoria, em minúsculas" },
   { key: "cidade", label: "Cidade" },
   { key: "link", label: "Site ou perfil (sem https://)" },
+  { key: "oportunidade", label: "Principal oportunidade da pesquisa" },
+  { key: "servico", label: "Serviço sugerido pela pesquisa" },
 ] as const;
 
 type VarKey = (typeof TEMPLATE_VARS)[number]["key"];
@@ -17,9 +19,12 @@ export function shortName(name: string): string {
   return name.split(/\s+[|–—-]\s+|\s*\(/)[0].trim() || name.trim();
 }
 
+const lowerFirst = (s: string | undefined) => (s ? s.charAt(0).toLocaleLowerCase("pt-BR") + s.slice(1) : null);
+
 export function outreachVars(
   company: { name: string; category: string | null; city: string | null; websiteUrl: string | null },
   contacts: { name: string | null; optedOut: boolean }[],
+  research?: { opportunity?: string; service?: string },
 ): OutreachVars {
   const person = contacts.find((c) => c.name && !c.optedOut)?.name?.trim().split(/\s+/)[0];
   return {
@@ -28,6 +33,8 @@ export function outreachVars(
     categoria: company.category?.toLocaleLowerCase("pt-BR") ?? null,
     cidade: company.city,
     link: company.websiteUrl?.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "") ?? null,
+    oportunidade: lowerFirst(research?.opportunity),
+    servico: lowerFirst(research?.service),
   };
 }
 

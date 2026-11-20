@@ -74,7 +74,8 @@ model Company {
   rejectionNote   String?
   closedAt        DateTime?        @db.Timestamptz
 
-  notes String? // user-authored
+  notes         String? // user-authored
+  outreachDraft String? // unsent first-contact message being edited
 
   // Discovery provenance; providerPlaceId only for providers with stable IDs.
   provider        String?
@@ -84,6 +85,7 @@ model Company {
   activities      Activity[]
   tasks           Task[]
   researchJobs    ResearchJob[]
+  deals           Deal[]
   researchReports ResearchReport[]
 
   discoveredAs DiscoveryCandidate[] @relation("PromotedFrom")
@@ -268,4 +270,31 @@ model ResearchReport {
   createdAt DateTime @default(now()) @db.Timestamptz
 
   @@index([companyId, createdAt])
+}
+
+enum DealStatus {
+  open // em negociação
+  proposal // proposta enviada
+  won
+  lost
+}
+
+// Commercial opportunity for a company; a company can have many over time (repeat business).
+model Deal {
+  id         String     @id @default(cuid())
+  companyId  String
+  company    Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  title      String
+  service    String?
+  valueCents Int?
+  status     DealStatus @default(open)
+  notes      String?
+
+  proposalSentAt DateTime? @db.Timestamptz
+  closedAt       DateTime? @db.Timestamptz
+  createdAt      DateTime  @default(now()) @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @db.Timestamptz
+
+  @@index([companyId])
+  @@index([status, closedAt])
 }

@@ -15,7 +15,9 @@ import { addActivity, changeStage, reactivate } from "../actions";
 import { Contacts } from "./contacts";
 import { OutreachCard } from "./outreach";
 import { ResearchCard } from "./research";
+import { DealsCard } from "./deals";
 import { outreachVars, pickTemplate } from "@/core/outreach";
+import { researchOutputSchema } from "@/research/schema";
 import { NewTaskForm, TaskItem } from "@/components/tasks";
 
 const ACTIVITY_LABEL = { note: "Nota", call: "Ligação", message: "Mensagem", email: "E-mail", meeting: "Reunião", stage_change: "Estágio" };
@@ -31,6 +33,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
       activities: { orderBy: { occurredAt: "desc" } },
       // open tasks first (completedAt null sorts first), then by due date
       tasks: { orderBy: [{ completedAt: { sort: "desc", nulls: "first" } }, { dueAt: { sort: "asc", nulls: "last" } }] },
+      deals: { orderBy: { createdAt: "desc" } },
     },
   });
   if (!c) notFound();
@@ -40,6 +43,8 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
     db.researchReport.findFirst({ where: { companyId: id }, orderBy: { createdAt: "desc" } }),
   ]);
   const reachable = c.contacts.filter((ct) => !ct.optedOut);
+  const parsedReport = report ? researchOutputSchema.safeParse(report.findings) : null;
+  const findings = parsedReport?.success ? parsedReport.data : null;
 
   const inLimbo = c.stage === "rejected";
   const info: [string, React.ReactNode][] = [
@@ -135,6 +140,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
               <NewTaskForm companyId={id} />
             </CardContent>
           </Card>
+          <DealsCard companyId={id} deals={c.deals} stage={c.stage} />
           <Contacts companyId={id} contacts={c.contacts} />
         </div>
 
@@ -143,8 +149,15 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           <OutreachCard
             companyId={id}
             templates={templates.map(({ id, name, body }) => ({ id, name, body }))}
-            defaultTemplateId={pickTemplate(templates, c.websiteStatus)?.id}
-            vars={outreachVars(c, c.contacts)}
+            defaultTemplateId={
+              (findings?.opportunities.length ? templates.find((t) => t.body.includes("{oportunidade}"))?.id : undefined) ??
+              pickTemplate(templates, c.websiteStatus)?.id
+            }
+            vars={outreachVars(c, c.contacts, {
+              opportunity: findings?.opportunities[0]?.title,
+              service: findings?.suggestedServices[0]?.service,
+            })}
+            draft={c.outreachDraft}
             phone={c.phone ?? reachable.find((ct) => ct.phone)?.phone ?? null}
             websiteStatus={c.websiteStatus}
             isPotential={c.stage === "potential"}

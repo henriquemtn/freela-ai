@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { selectCls } from "@/components/badges";
 import { renderTemplate, TEMPLATE_VARS, whatsappUrl, type OutreachVars } from "@/core/outreach";
 import type { WebsiteStatus } from "@/generated/prisma/enums";
-import { recordOutreach } from "@/app/outreach/actions";
+import { discardOutreachDraft, recordOutreach, saveOutreachDraft } from "@/app/outreach/actions";
 
 type Template = { id: string; name: string; body: string };
 
@@ -22,6 +22,7 @@ export function OutreachCard({
   websiteStatus,
   isPotential,
   optedOut,
+  draft,
 }: {
   companyId: string;
   templates: Template[];
@@ -31,9 +32,11 @@ export function OutreachCard({
   websiteStatus: WebsiteStatus;
   isPotential: boolean;
   optedOut: boolean;
+  draft: string | null;
 }) {
   const [templateId, setTemplateId] = useState(defaultTemplateId ?? templates[0]?.id);
   const [text, setText] = useState(() => {
+    if (draft) return draft;
     const t = templates.find((x) => x.id === templateId);
     return t ? renderTemplate(t.body, vars).text : "";
   });
@@ -74,7 +77,10 @@ export function OutreachCard({
 
   return (
     <Card>
-      <CardHeader><CardTitle>Abordagem</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
+        <CardTitle>Abordagem</CardTitle>
+        {draft && <span className="text-xs text-primary">Rascunho salvo</span>}
+      </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center gap-2">
           <select value={templateId} onChange={(e) => choose(e.target.value)} className={selectCls} aria-label="Modelo de mensagem">
@@ -101,6 +107,12 @@ export function OutreachCard({
             {wa && (
               <Button type="button" variant="secondary" asChild>
                 <a href={wa} target="_blank" rel="noreferrer"><MessageCircle /> Abrir no WhatsApp</a>
+              </Button>
+            )}
+            <Button formAction={saveOutreachDraft.bind(null, companyId)} variant="ghost">Salvar rascunho</Button>
+            {draft && (
+              <Button formAction={discardOutreachDraft.bind(null, companyId)} variant="ghost" className="text-muted-foreground">
+                Descartar rascunho
               </Button>
             )}
           </div>
