@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Eyebrow, PageHeader } from "@/components/page-header";
 import { connection } from "next/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TaskItem } from "@/components/tasks";
@@ -12,10 +13,10 @@ const OPEN_STAGES = ["potential", "contacted", "in_progress"] as const;
 
 function Stat({ label, value, href, alert }: { label: string; value: React.ReactNode; href?: string; alert?: boolean }) {
   const body = (
-    <Card className={cn("gap-1 py-4", href && "hover:border-primary/50", alert && "border-destructive/50")}>
-      <CardContent className="px-4">
-        <div className="text-xs text-muted-foreground">{label}</div>
-        <div className={cn("text-2xl font-semibold tabular-nums", alert && "text-destructive")}>{value}</div>
+    <Card className={cn("h-full gap-2 transition-colors", href && "hover:border-primary/40", alert && "border-destructive/40")}>
+      <CardContent className="space-y-2">
+        <Eyebrow>{label}</Eyebrow>
+        <div className={cn("text-[28px] leading-8 font-semibold tracking-[-0.03em] tabular-nums", alert && "text-destructive")}>{value}</div>
       </CardContent>
     </Card>
   );
@@ -40,8 +41,8 @@ export default async function OverviewPage() {
   const activeLeads = OPEN_STAGES.reduce((n, s) => n + count(s), 0);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Visão geral</h1>
+    <div className="space-y-8">
+      <PageHeader title="Visão geral" description="O que precisa da sua atenção hoje, e como está o funil." />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <Stat label="Leads ativos" value={activeLeads} href="/pipeline" />
@@ -56,10 +57,10 @@ export default async function OverviewPage() {
           <Link
             key={s}
             href={s === "rejected" ? "/limbo" : `/companies?stage=${s}`}
-            className="rounded-lg border border-border px-3 py-2 text-xs hover:border-primary/50"
+            className="rounded-xl border border-border bg-card/50 px-3.5 py-2.5 text-xs transition-colors hover:border-primary/40"
           >
             <div className="text-muted-foreground">{STAGE_LABEL[s]}</div>
-            <div className="text-base font-medium tabular-nums">{count(s)}</div>
+            <div className="text-lg font-semibold tabular-nums">{count(s)}</div>
           </Link>
         ))}
       </div>

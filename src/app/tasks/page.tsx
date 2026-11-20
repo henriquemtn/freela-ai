@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NewTaskForm, TaskItem, type TaskRow } from "@/components/tasks";
 import { DUE_LABEL, dueStatus, type DueStatus } from "@/core/tasks";
@@ -20,8 +21,8 @@ export default async function TasksPage() {
   for (const t of [...open, ...done]) groups.get(dueStatus(t, now))!.push(t);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Tarefas e follow-ups</h1>
+    <div className="space-y-8">
+      <PageHeader title="Tarefas e follow-ups" description="Ligações, mensagens e próximos passos, por data." />
 
       <Card>
         <CardContent>

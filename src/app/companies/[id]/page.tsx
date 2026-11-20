@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/page-header";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { Pencil } from "lucide-react";
@@ -12,6 +13,8 @@ import { db } from "@/lib/db";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { addActivity, changeStage, reactivate } from "../actions";
 import { Contacts } from "./contacts";
+import { OutreachCard } from "./outreach";
+import { outreachVars, pickTemplate } from "@/core/outreach";
 import { NewTaskForm, TaskItem } from "@/components/tasks";
 
 const ACTIVITY_LABEL = { note: "Nota", call: "Ligação", message: "Mensagem", email: "E-mail", meeting: "Reunião", stage_change: "Estágio" };
@@ -30,6 +33,8 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
     },
   });
   if (!c) notFound();
+  const templates = await db.messageTemplate.findMany({ orderBy: { createdAt: "asc" } });
+  const reachable = c.contacts.filter((ct) => !ct.optedOut);
 
   const inLimbo = c.stage === "rejected";
   const info: [string, React.ReactNode][] = [
@@ -44,20 +49,22 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{c.name}</h1>
-          <div className="flex flex-wrap gap-1.5">
-            <StageBadge stage={c.stage} />
-            <WebsiteBadge status={c.websiteStatus} />
-            <PriorityBadge priority={effectivePriority(c)} />
-          </div>
+    <div className="space-y-8">
+      <PageHeader
+        title={c.name}
+        back={{ href: "/companies", label: "Empresas" }}
+        actions={
+          <Button variant="outline" asChild>
+            <Link href={`/companies/${id}/edit`}><Pencil /> Editar</Link>
+          </Button>
+        }
+      >
+        <div className="flex flex-wrap gap-1.5 pt-1">
+          <StageBadge stage={c.stage} />
+          <WebsiteBadge status={c.websiteStatus} />
+          <PriorityBadge priority={effectivePriority(c)} />
         </div>
-        <Button variant="outline" asChild>
-          <Link href={`/companies/${id}/edit`}><Pencil /> Editar</Link>
-        </Button>
-      </div>
+      </PageHeader>
 
       {inLimbo ? (
         <Card className="border-destructive/40">
@@ -103,7 +110,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
                 {info.filter(([, v]) => v || v === 0).map(([k, v]) => (
                   <div key={k} className="contents">
                     <dt className="text-muted-foreground">{k}</dt>
-                    <dd className="break-all">{v}</dd>
+                    <dd className="break-words">{v}</dd>
                   </div>
                 ))}
               </dl>
@@ -124,6 +131,19 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           <Contacts companyId={id} contacts={c.contacts} />
         </div>
 
+        <div className="space-y-6">
+        {!inLimbo && (
+          <OutreachCard
+            companyId={id}
+            templates={templates.map(({ id, name, body }) => ({ id, name, body }))}
+            defaultTemplateId={pickTemplate(templates, c.websiteStatus)?.id}
+            vars={outreachVars(c, c.contacts)}
+            phone={c.phone ?? reachable.find((ct) => ct.phone)?.phone ?? null}
+            websiteStatus={c.websiteStatus}
+            isPotential={c.stage === "potential"}
+            optedOut={c.contacts.some((ct) => ct.optedOut)}
+          />
+        )}
         <Card>
           <CardHeader><CardTitle>Linha do tempo</CardTitle></CardHeader>
           <CardContent className="space-y-6">
@@ -158,6 +178,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
             </ol>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

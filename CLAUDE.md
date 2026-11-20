@@ -1,5 +1,5 @@
 @AGENTS.md
-@FENIX.md
+@SPEC.md
 
 # Conventions
 

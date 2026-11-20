@@ -62,7 +62,7 @@ export function Board({ cards, now }: { cards: BoardCard[]; now: Date }) {
             }}
             onDrop={(e) => drop(stage, e.dataTransfer.getData("text/plain"))}
             className={cn(
-              "flex flex-col gap-2 rounded-xl border border-border bg-muted/30 p-2 transition-colors",
+              "flex flex-col gap-2 rounded-2xl border border-border bg-card/40 p-2.5 transition-colors",
               over === stage && "border-primary/60 bg-primary/5",
             )}
           >
@@ -91,7 +91,7 @@ function Card({ card: c, now }: { card: BoardCard; now: Date }) {
         e.dataTransfer.setData("text/plain", c.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="cursor-grab space-y-2 rounded-lg border border-border bg-card p-3 text-sm shadow-xs active:cursor-grabbing"
+      className="cursor-grab space-y-2 rounded-xl border border-border bg-card p-3.5 text-sm transition-colors hover:border-primary/40 active:cursor-grabbing"
     >
       <div className="flex items-start justify-between gap-2">
         <Link href={`/companies/${c.id}`} className="font-medium leading-tight hover:text-primary">

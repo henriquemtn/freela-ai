@@ -1,3 +1,5 @@
+> **Note:** the product was renamed from FENIX to **freela-ai**. "FENIX" below refers to the same product.
+
 # FENIX --- Product & Technical Specification
 
 > **Status:** Product conception / MVP planning\
