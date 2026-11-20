@@ -17,13 +17,19 @@ describe("outreachVars", () => {
     const v = outreachVars(company, [{ name: "Ana Souza", optedOut: true }, { name: "Leonardo Costa", optedOut: false }]);
     expect(v).toEqual({
       nome: "Leonardo", empresa: "Leonardo Barbearia", categoria: "barbearia", cidade: "Florianópolis", link: "instagram.com/leo",
-      oportunidade: null, servico: null,
+      oportunidade: null, servico: null, meu_nome: null, minha_profissao: null, meu_portfolio: null,
     });
   });
 
   it("takes opportunity and service from research, lowercasing the first letter", () => {
     const v = outreachVars(company, [], { opportunity: "Agendamento só por DM", service: "Agendamento online" });
     expect([v.oportunidade, v.servico]).toEqual(["agendamento só por DM", "agendamento online"]);
+  });
+
+  it("fills the user's own details from the profile", () => {
+    const v = outreachVars(company, [], undefined, { name: "Henrique", profession: "desenvolvedor web", portfolioUrl: "https://www.henrique.dev/" });
+    expect([v.meu_nome, v.minha_profissao, v.meu_portfolio]).toEqual(["Henrique", "desenvolvedor web", "henrique.dev"]);
+    expect(outreachVars(company, [], undefined, { name: "", profession: "", portfolioUrl: "" }).meu_nome).toBeNull();
   });
 
   it("falls back to the company name", () => {
@@ -35,6 +41,7 @@ describe("renderTemplate", () => {
   it("fills known vars and reports missing ones, leaving unknown braces alone", () => {
     const r = renderTemplate("Oi, {nome}! {categoria} em {cidade}. {outro}", {
       nome: "Ana", empresa: "X", categoria: null, cidade: "Floripa", link: null, oportunidade: null, servico: null,
+      meu_nome: null, minha_profissao: null, meu_portfolio: null,
     });
     expect(r.text).toBe("Oi, Ana! {categoria} em Floripa. {outro}");
     expect(r.missing).toEqual(["categoria"]);

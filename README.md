@@ -19,7 +19,8 @@ After a migration (`pnpm db:migrate`), restart `pnpm dev`: the dev server keeps 
 previously generated Prisma Client in memory.
 
 Don't run `pnpm build` while `pnpm dev` is running: both write to `.next` and the dev
-server can end up serving stale code. If that happens, stop it, `rm -rf .next`, restart.
+server can end up serving stale code. Switching git branches while it runs can make routes
+404. In both cases, stop it (if needed `rm -rf .next`) and restart.
 
 ### Lead discovery
 
@@ -64,7 +65,7 @@ the 0–100 score is computed in code from those signals (`src/research/score.ts
 - `src/core/deals.ts`, `followups.ts`, `analytics.ts` — deal effects, follow-up rules, revenue/funnel (tested)
 - `src/core/outreach.ts` — first-contact templates: variables, template choice, WhatsApp link (tested)
 - `src/lib/crm.ts` — shared server operations (stage transitions, next action, last interaction)
-- `src/app/` — pages: Overview, Results, Discovery, Outreach, Pipeline (Kanban), Companies, Tasks, Limbo
+- `src/app/` — pages: Overview, Results, Profile (outreach `{meu_nome}`…), Discovery, Outreach, Pipeline (Kanban), Companies, Tasks, Limbo
 
 ## Status
 

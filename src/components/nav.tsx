@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Archive, ArrowRight, BriefcaseBusiness, Building2, ChartColumn, CheckSquare, ChevronRight, Columns3, LayoutDashboard, MessageSquareText, Radar, Sparkles } from "lucide-react";
+import { Archive, ArrowRight, BriefcaseBusiness, Building2, ChartColumn, CheckSquare, ChevronRight, Columns3, LayoutDashboard, MessageSquareText, Radar, Sparkles, UserRound } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ponytail: only areas that exist; Settings arrives when there is something to configure in the UI.
+// ponytail: only areas that exist.
 const groups = [
   {
     label: null,
@@ -30,6 +30,7 @@ const groups = [
       { href: "/limbo", label: "Limbo", icon: Archive },
     ],
   },
+  { label: "Conta", items: [{ href: "/settings", label: "Perfil", icon: UserRound }] },
 ];
 
 const allItems = groups.flatMap((g) => g.items);
