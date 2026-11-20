@@ -9,6 +9,9 @@ export const TEMPLATE_VARS = [
   { key: "link", label: "Site ou perfil (sem https://)" },
   { key: "oportunidade", label: "Principal oportunidade da pesquisa" },
   { key: "servico", label: "Serviço sugerido pela pesquisa" },
+  { key: "meu_nome", label: "Seu nome (Perfil)" },
+  { key: "minha_profissao", label: "Sua profissão (Perfil)" },
+  { key: "meu_portfolio", label: "Seu portfólio (Perfil, sem https://)" },
 ] as const;
 
 type VarKey = (typeof TEMPLATE_VARS)[number]["key"];
@@ -25,6 +28,7 @@ export function outreachVars(
   company: { name: string; category: string | null; city: string | null; websiteUrl: string | null },
   contacts: { name: string | null; optedOut: boolean }[],
   research?: { opportunity?: string; service?: string },
+  me?: { name: string; profession: string; portfolioUrl: string },
 ): OutreachVars {
   const person = contacts.find((c) => c.name && !c.optedOut)?.name?.trim().split(/\s+/)[0];
   return {
@@ -35,6 +39,9 @@ export function outreachVars(
     link: company.websiteUrl?.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "") ?? null,
     oportunidade: lowerFirst(research?.opportunity),
     servico: lowerFirst(research?.service),
+    meu_nome: me?.name || null,
+    minha_profissao: me?.profession || null,
+    meu_portfolio: me?.portfolioUrl ? me.portfolioUrl.replace(/^https?:\/\/(www\.)?/i, "").replace(/\/+$/, "") : null,
   };
 }
 

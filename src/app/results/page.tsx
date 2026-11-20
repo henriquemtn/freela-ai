@@ -2,6 +2,7 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eyebrow, PageHeader } from "@/components/page-header";
+import { BarChart } from "@/components/bar-chart";
 import { dealStats, funnel, MIN_SAMPLE, revenueByMonth } from "@/core/analytics";
 import { STAGE_LABEL } from "@/core/pipeline";
 import { db } from "@/lib/db";
@@ -32,7 +33,6 @@ export default async function ResultsPage() {
   const stats = dealStats(deals);
   const won = deals.filter((d) => d.status === "won");
   const months = revenueByMonth(won, now, 6);
-  const maxMonth = Math.max(...months.map((m) => m.cents), 1);
   const thisMonth = months.at(-1)!.cents;
   const openProposals = deals.filter((d) => d.status === "proposal");
   const steps = funnel(companies.map((c) => ({ stage: c.stage, visited: c.activities.flatMap((a) => [a.fromStage, a.toStage]).filter((s) => s !== null) })));
@@ -62,36 +62,11 @@ export default async function ResultsPage() {
         <Card>
           <CardHeader><CardTitle>Receita por mês</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {/* Single series: no legend (the title names it); value shown on hover/focus and in the table. */}
-            <div className="flex h-44 items-end gap-2 border-b border-border" role="img" aria-label="Receita por mês nos últimos 6 meses">
-              {months.map((m) => (
-                <div key={m.label} className="group relative flex h-full flex-1 items-end justify-center" tabIndex={0}>
-                  <div
-                    className="w-full max-w-10 rounded-t-[4px] bg-primary transition-opacity group-hover:opacity-80"
-                    style={{ height: m.cents ? `${Math.max(2, (m.cents / maxMonth) * 100)}%` : "0" }}
-                  />
-                  <div className="pointer-events-none absolute -top-2 left-1/2 hidden -translate-x-1/2 -translate-y-full rounded-lg border border-border bg-popover px-2 py-1 text-xs whitespace-nowrap group-hover:block group-focus:block">
-                    {m.label}: <span className="font-medium tabular-nums">{formatBRL(m.cents)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 text-center text-xs text-muted-foreground">
-              {months.map((m) => <div key={m.label} className="flex-1">{m.label}</div>)}
-            </div>
-            <details className="text-sm">
-              <summary className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">Ver como tabela</summary>
-              <table className="mt-2 w-full text-sm">
-                <tbody>
-                  {months.map((m) => (
-                    <tr key={m.label} className="border-b border-border last:border-0">
-                      <td className="py-1 text-muted-foreground">{m.label}</td>
-                      <td className="py-1 text-right tabular-nums">{formatBRL(m.cents)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </details>
+            <BarChart
+              ariaLabel="Receita por mês nos últimos 6 meses"
+              data={months.map((m) => ({ label: m.label, value: m.cents, display: formatBRL(m.cents) }))}
+              valueHeader="Receita"
+            />
           </CardContent>
         </Card>
 
