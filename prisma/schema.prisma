@@ -1,0 +1,126 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Stage {
+  potential
+  contacted
+  in_progress
+  working
+  completed
+  rejected // Limbo: not shown on the Kanban
+}
+
+enum WebsiteStatus {
+  not_found
+  social_only
+  outdated
+  active
+  unknown
+}
+
+enum Priority {
+  low
+  medium
+  high
+}
+
+enum RejectionReason {
+  no_interest
+  no_response
+  already_has_provider
+  no_budget
+  not_a_fit
+  invalid_business
+  duplicate
+  other
+}
+
+enum ActivityType {
+  note
+  stage_change
+  call
+  message
+  email
+  meeting
+}
+
+model Company {
+  id       String  @id @default(cuid())
+  name     String
+  category String?
+  city     String?
+  state    String?
+  address  String?
+  phone    String?
+
+  websiteUrl    String?
+  websiteStatus WebsiteStatus @default(unknown)
+
+  stage          Stage     @default(potential)
+  generatedScore Int? // filled by research (Phase 4)
+  manualPriority Priority?
+
+  estimatedValueCents Int?
+  nextActionAt        DateTime? @db.Timestamptz
+  lastInteractionAt   DateTime? @db.Timestamptz
+
+  rejectionReason RejectionReason?
+  rejectionNote   String?
+  closedAt        DateTime?        @db.Timestamptz
+
+  notes String? // user-authored
+
+  contacts   Contact[]
+  activities Activity[]
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([stage])
+  @@index([name])
+  @@index([city])
+  @@index([nextActionAt])
+}
+
+model Contact {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name  String?
+  role  String?
+  email String?
+  phone String?
+  notes String?
+
+  // LGPD: where and when it was collected
+  source      String?
+  collectedAt DateTime? @db.Timestamptz
+  optedOut    Boolean   @default(false)
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  @@index([companyId])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  companyId String
+  company   Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  body      String?
+  fromStage Stage?
+  toStage   Stage?
+
+  occurredAt DateTime @default(now()) @db.Timestamptz
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([companyId, occurredAt])
+}
