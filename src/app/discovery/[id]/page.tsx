@@ -12,8 +12,8 @@ import { matchCompany } from "@/discovery/dedupe";
 import { db } from "@/lib/db";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { cancelRun, dismissCandidates, promoteCandidates } from "../actions";
-import { AutoRefresh } from "./auto-refresh";
+import { cancelRun, dismissCandidates, promoteAndResearch, promoteCandidates } from "../actions";
+import { AutoRefresh } from "@/components/auto-refresh";
 
 export default async function RunPage({ params, searchParams }: PageProps<"/discovery/[id]">) {
   const { id } = await params;
@@ -85,7 +85,8 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
       ) : (
         <form className="space-y-3">
           <div className="flex gap-2">
-            <Button formAction={promoteCandidates.bind(null, id)}>Adicionar selecionados ao CRM</Button>
+            <Button formAction={promoteAndResearch.bind(null, id)}>Adicionar e pesquisar</Button>
+            <Button formAction={promoteCandidates.bind(null, id)} variant="secondary">Só adicionar</Button>
             <Button formAction={dismissCandidates.bind(null, id)} variant="outline">Descartar selecionados</Button>
           </div>
           <Table>

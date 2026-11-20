@@ -29,20 +29,28 @@ export default async function OverviewPage() {
   const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
   const include = { company: { select: { id: true, name: true } } };
 
-  const [byStage, openValue, dueTasks, overdueCount, recentActivity, recentCompanies] = await Promise.all([
+  const [byStage, openValue, dueTasks, overdueCount, recentActivity, recentCompanies, researching] = await Promise.all([
     db.company.groupBy({ by: ["stage"], _count: true }),
     db.company.aggregate({ where: { stage: { in: [...OPEN_STAGES] } }, _sum: { estimatedValueCents: true } }),
     db.task.findMany({ where: { completedAt: null, dueAt: { lt: endOfToday } }, orderBy: { dueAt: "asc" }, take: 15, include }),
     db.task.count({ where: { completedAt: null, dueAt: { lt: now } } }),
     db.activity.findMany({ orderBy: { occurredAt: "desc" }, take: 8, include: { company: { select: { name: true } } } }),
     db.company.findMany({ orderBy: { createdAt: "desc" }, take: 5, select: { id: true, name: true, city: true, createdAt: true } }),
+    db.researchJob.count({ where: { status: { in: ["queued", "running"] } } }),
   ]);
   const count = (s: string) => byStage.find((r) => r.stage === s)?._count ?? 0;
   const activeLeads = OPEN_STAGES.reduce((n, s) => n + count(s), 0);
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Visão geral" description="O que precisa da sua atenção hoje, e como está o funil." />
+      <PageHeader title="Visão geral" description="O que precisa da sua atenção hoje, e como está o funil.">
+        {researching > 0 && (
+          <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+            <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+            {researching} {researching === 1 ? "pesquisa em andamento" : "pesquisas em andamento"}
+          </div>
+        )}
+      </PageHeader>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         <Stat label="Leads ativos" value={activeLeads} href="/pipeline" />

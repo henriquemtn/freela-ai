@@ -1,6 +1,7 @@
-// Background worker: runs discovery jobs outside the web request cycle.
+// Background worker: runs discovery and research jobs outside the web request cycle.
 // Start with `pnpm worker` (alongside `pnpm dev`).
 import { claimRun, executeRun, failOrphanedRuns } from "@/discovery/run";
+import { claimResearchJob, executeResearch, failOrphanedResearch } from "@/research/run";
 import { db } from "@/lib/db";
 
 const POLL_MS = 3_000;
@@ -13,7 +14,8 @@ const log = (msg: string) => console.log(`[worker ${new Date().toISOString()}] $
 async function main() {
   // ponytail: assumes a single worker; with several, orphan detection needs heartbeats.
   await failOrphanedRuns();
-  log("pronto, aguardando execuções de descoberta");
+  await failOrphanedResearch();
+  log("pronto, aguardando buscas e pesquisas");
 
   while (!stopping) {
     const run = await claimRun();
@@ -22,6 +24,13 @@ async function main() {
       await executeRun(run);
       log(`execução ${run.id} finalizada`);
       continue; // check for more work right away
+    }
+    const job = await claimResearchJob();
+    if (job) {
+      log(`pesquisa ${job.id}: empresa ${job.companyId}`);
+      await executeResearch(job);
+      log(`pesquisa ${job.id} finalizada`);
+      continue;
     }
     await new Promise((r) => setTimeout(r, POLL_MS));
   }
