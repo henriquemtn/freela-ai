@@ -56,8 +56,8 @@ export function isSocialUrl(url: string | null | undefined): boolean {
  * not proof of no website, so only "social_only" can be inferred here; real
  * verification happens in research (Phase 4).
  */
-export function presenceFromListing(websiteUrl: string | null): WebsiteStatus {
-  return websiteUrl && isSocialUrl(websiteUrl) ? "social_only" : "unknown";
+export function presenceFromListing(websiteUrl: string | null, instagramUrl: string | null = null): WebsiteStatus {
+  return (websiteUrl && isSocialUrl(websiteUrl)) || (!websiteUrl && instagramUrl) ? "social_only" : "unknown";
 }
 
 /** Dedupe key for a website: the domain, or domain + profile path for social/directory URLs. */

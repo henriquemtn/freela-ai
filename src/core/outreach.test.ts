@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { outreachVars, pickTemplate, renderTemplate, shortName, whatsappUrl } from "./outreach";
+import { outreachVars, pickTemplate, renderTemplate, shortName, whatsappUrl, instagramHandle } from "./outreach";
 
 const company = { name: "Leonardo Barbearia | Trindade", category: "Barbearia", city: "Florianópolis", websiteUrl: "https://www.instagram.com/leo/" };
 
@@ -66,5 +66,13 @@ describe("whatsappUrl", () => {
   it("builds a wa.me link with the text encoded", () => {
     expect(whatsappUrl("(48) 99152-6450", "Oi, tudo bem?")).toBe("https://wa.me/5548991526450?text=Oi%2C%20tudo%20bem%3F");
     expect(whatsappUrl(null, "x")).toBeNull();
+  });
+});
+
+describe("instagramHandle", () => {
+  it("takes the first handle from @user or a profile URL, skipping post links", () => {
+    expect(instagramHandle(null, "@leo.barber")).toBe("leo.barber");
+    expect(instagramHandle("https://www.instagram.com/p/abc/", "https://instagram.com/leo/?hl=pt")).toBe("leo");
+    expect(instagramHandle("https://leo.com.br", undefined)).toBeNull();
   });
 });

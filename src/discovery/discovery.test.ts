@@ -78,8 +78,21 @@ describe("Claude discovery output", () => {
     state: "SC",
     phone: "(48) 3333-4444",
     websiteUrl: null,
+    instagramUrl: "instagram.com/padariasj",
+    activityEvidence: "Post de 10/11/2026 indexado no Google",
     sourceUrl: "https://example.com/padaria",
   };
+
+  it("drops businesses without an Instagram profile or activity evidence", () => {
+    const kept = toFoundPlaces(
+      {
+        businesses: [business, { ...business, instagramUrl: "https://facebook.com/x" }, { ...business, activityEvidence: null }],
+        limitations: [],
+      },
+      { area: "Florianópolis, SC", term: "padaria" },
+    );
+    expect(kept).toHaveLength(1);
+  });
 
   it("requires a source for every business", () => {
     const noSource = { ...business, sourceUrl: undefined };
@@ -102,17 +115,18 @@ describe("Claude discovery output", () => {
       { area: "Florianópolis, SC", term: "padaria" },
     );
     expect(a.websiteUrl).toBe("https://padaria.com.br");
+    expect(a.instagramUrl).toBe("https://instagram.com/padariasj");
     expect(a.sourceUrl).toBe("http://guia.com/x");
   });
 });
 
 describe("preScore", () => {
-  const c = (o: Partial<{ websiteUrl: string | null; phone: string | null; address: string | null }>) => ({
-    websiteUrl: null, phone: null, address: null, ...o,
+  const c = (o: Partial<{ websiteUrl: string | null; phone: string | null; address: string | null; activityEvidence: string | null }>) => ({
+    websiteUrl: null, phone: null, address: null, activityEvidence: null, ...o,
   });
 
   it("social-only with phone and address ranks highest", () => {
-    expect(preScore(c({ websiteUrl: "https://instagram.com/x", phone: "48 3333-4444", address: "Rua A" })).score).toBe(100);
+    expect(preScore(c({ phone: "48 3333-4444", address: "Rua A", activityEvidence: "post 10/11" })).score).toBe(100);
   });
 
   it("no website alone stays low", () => {
@@ -120,8 +134,8 @@ describe("preScore", () => {
   });
 
   it("an own website lowers the rank", () => {
-    const r = preScore(c({ websiteUrl: "https://padaria.com.br", phone: "1", address: "x" }));
+    const r = preScore(c({ websiteUrl: "https://padaria.com.br", phone: "1", address: "x", activityEvidence: "y" }));
     expect(r.score).toBe(70);
-    expect(r.reasons).toEqual(["Já tem site", "Telefone", "Endereço", "Presença online ativa"]);
+    expect(r.reasons).toEqual(["Já tem site", "Telefone", "Endereço", "Ativo recentemente"]);
   });
 });

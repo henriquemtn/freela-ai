@@ -70,3 +70,15 @@ export function whatsappUrl(phone: string | null, text: string): string | null {
   const digits = normalizePhone(phone);
   return digits ? `https://wa.me/${digits}?text=${encodeURIComponent(text)}` : null;
 }
+
+/** First Instagram handle found in "@user" or instagram.com/user URLs; post/reel links don't count. */
+export function instagramHandle(...candidates: (string | null | undefined)[]): string | null {
+  for (const c of candidates) {
+    const m = c?.trim().match(/^@([\w.]+)$/) ?? c?.match(/instagram\.com\/([\w.]+)/i);
+    if (m && !["p", "reel", "reels", "stories", "explore"].includes(m[1].toLowerCase())) return m[1];
+  }
+  return null;
+}
+
+/** Opens a DM with the business; ig.me can't prefill text, so the caller copies it first. */
+export const instagramDmUrl = (handle: string) => `https://ig.me/m/${handle}`;
