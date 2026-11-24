@@ -146,6 +146,12 @@ export default async function RunPage({ params, searchParams }: PageProps<"/disc
                       ) : (
                         <Badge>sem site encontrado</Badge>
                       )}
+                      {c.instagramUrl && (
+                        <a href={c.instagramUrl} target="_blank" rel="noreferrer" className="block truncate text-xs text-muted-foreground hover:text-primary">
+                          {c.instagramUrl.replace(/^https?:\/\/(www\.)?/, "")}
+                        </a>
+                      )}
+                      {c.activityEvidence && <div className="text-xs text-muted-foreground" title="Evidência de atividade">{c.activityEvidence}</div>}
                     </TableCell>
                     <TableCell className="text-xs">
                       {pending ? (

@@ -1,6 +1,6 @@
 import { isSocialUrl } from "./normalize";
 
-type Candidate = { websiteUrl: string | null; phone: string | null; address: string | null };
+type Candidate = { websiteUrl: string | null; phone: string | null; address: string | null; activityEvidence?: string | null };
 
 /**
  * Preliminary 0-100 ranking from search data alone, before research. Like the
@@ -28,9 +28,9 @@ export function preScore(c: Candidate): { score: number; reasons: string[] } {
     score += 15;
     reasons.push("Endereço");
   }
-  if (c.websiteUrl) {
+  if (c.activityEvidence) {
     score += 15;
-    reasons.push("Presença online ativa");
+    reasons.push("Ativo recentemente");
   }
   return { score, reasons };
 }
