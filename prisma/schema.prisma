@@ -60,6 +60,7 @@ model Company {
   phone    String?
 
   websiteUrl    String?
+  instagramUrl  String?
   websiteStatus WebsiteStatus @default(unknown)
 
   stage          Stage     @default(potential)
@@ -208,6 +209,9 @@ model DiscoveryCandidate {
   phone      String?
   websiteUrl String?
   sourceUrl  String? // page where the result was found
+
+  instagramUrl     String?
+  activityEvidence String? // why discovery judged the business active recently
 
   companyId String? // set once promoted or when an exact duplicate
   company   Company? @relation("PromotedFrom", fields: [companyId], references: [id], onDelete: SetNull)

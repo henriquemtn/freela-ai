@@ -16,7 +16,7 @@ import { Contacts } from "./contacts";
 import { OutreachCard } from "./outreach";
 import { ResearchCard } from "./research";
 import { DealsCard } from "./deals";
-import { outreachVars, pickTemplate } from "@/core/outreach";
+import { instagramHandle, outreachVars, pickTemplate } from "@/core/outreach";
 import { researchOutputSchema } from "@/research/schema";
 import { getProfile } from "@/lib/settings";
 import { NewTaskForm, TaskItem } from "@/components/tasks";
@@ -54,6 +54,7 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
     ["Local", [c.address, c.city, c.state].filter(Boolean).join(", ")],
     ["Telefone", c.phone],
     ["Site", c.websiteUrl && <a href={c.websiteUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">{c.websiteUrl}</a>],
+    ["Instagram", c.instagramUrl && <a href={c.instagramUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">{c.instagramUrl.replace(/^https?:\/\/(www\.)?/, "")}</a>],
     ["Valor estimado", c.estimatedValueCents != null && formatBRL(c.estimatedValueCents)],
     ["Próxima ação", c.nextActionAt && formatDateTime(c.nextActionAt)],
     ["Última interação", c.lastInteractionAt && formatDateTime(c.lastInteractionAt)],
@@ -151,16 +152,20 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           <OutreachCard
             companyId={id}
             templates={templates.map(({ id, name, body }) => ({ id, name, body }))}
-            defaultTemplateId={
-              (findings?.opportunities.length ? templates.find((t) => t.body.includes("{oportunidade}"))?.id : undefined) ??
-              pickTemplate(templates, c.websiteStatus)?.id
-            }
+            // ponytail: "offer a preview" (seeded id) is always the default; falls back if it was deleted.
+            defaultTemplateId={templates.find((t) => t.id === "tpl_no_site_offer")?.id ?? pickTemplate(templates, c.websiteStatus)?.id}
             vars={outreachVars(c, c.contacts, {
               opportunity: findings?.opportunities[0]?.title,
               service: findings?.suggestedServices[0]?.service,
             }, profile)}
             draft={c.outreachDraft}
             phone={c.phone ?? reachable.find((ct) => ct.phone)?.phone ?? null}
+            instagram={instagramHandle(
+              c.instagramUrl,
+              c.websiteUrl,
+              ...(findings?.socialProfiles.map((s) => s.url) ?? []),
+              ...(findings?.contactChannels.filter((ch) => ch.type === "instagram").map((ch) => ch.value) ?? []),
+            )}
             websiteStatus={c.websiteStatus}
             isPotential={c.stage === "potential"}
             optedOut={c.contacts.some((ct) => ct.optedOut)}

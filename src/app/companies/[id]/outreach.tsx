@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { AlertTriangle, Check, Copy, MessageCircle } from "lucide-react";
+import { AlertTriangle, AtSign, Check, Copy, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { selectCls } from "@/components/badges";
-import { renderTemplate, TEMPLATE_VARS, whatsappUrl, type OutreachVars } from "@/core/outreach";
+import { instagramDmUrl, renderTemplate, TEMPLATE_VARS, whatsappUrl, type OutreachVars } from "@/core/outreach";
 import type { WebsiteStatus } from "@/generated/prisma/enums";
 import { discardOutreachDraft, recordOutreach, saveOutreachDraft } from "@/app/outreach/actions";
 
@@ -19,6 +19,7 @@ export function OutreachCard({
   defaultTemplateId,
   vars,
   phone,
+  instagram,
   websiteStatus,
   isPotential,
   optedOut,
@@ -29,6 +30,7 @@ export function OutreachCard({
   defaultTemplateId?: string;
   vars: OutreachVars;
   phone: string | null;
+  instagram: string | null;
   websiteStatus: WebsiteStatus;
   isPotential: boolean;
   optedOut: boolean;
@@ -118,6 +120,13 @@ export function OutreachCard({
                 <a href={wa} target="_blank" rel="noreferrer"><MessageCircle /> Abrir no WhatsApp</a>
               </Button>
             )}
+            {instagram && (
+              <Button type="button" variant="secondary" asChild>
+                <a href={instagramDmUrl(instagram)} target="_blank" rel="noreferrer" onClick={copy} title="Copia a mensagem e abre a DM">
+                  <AtSign /> Copiar e abrir Instagram
+                </a>
+              </Button>
+            )}
             <Button formAction={saveOutreachDraft.bind(null, companyId)} variant="ghost">Salvar rascunho</Button>
             {draft && (
               <Button formAction={discardOutreachDraft.bind(null, companyId)} variant="ghost" className="text-muted-foreground">
@@ -129,7 +138,7 @@ export function OutreachCard({
           <div className="space-y-2 rounded-xl border border-border p-3 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Enviei por</span>
-              <select name="channel" defaultValue={websiteStatus === "social_only" && !wa ? "instagram" : "whatsapp"} className={`${selectCls} h-8 w-36`}>
+              <select name="channel" defaultValue={!wa && instagram ? "instagram" : "whatsapp"} className={`${selectCls} h-8 w-36`}>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="instagram">Instagram</option>
                 <option value="email">E-mail</option>
