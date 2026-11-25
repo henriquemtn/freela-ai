@@ -2,10 +2,17 @@ import type { WebsiteStatus } from "@/generated/prisma/enums";
 
 /** Digits only, with Brazil's country code added to bare 10/11-digit numbers. */
 export function normalizePhone(raw: string | null | undefined): string | null {
-  const digits = (raw ?? "").replace(/\D/g, "");
+  // Drop the trunk "0" of "(048) ..." so it normalizes like "(48) ...".
+  const digits = (raw ?? "").replace(/\D/g, "").replace(/^0(?=\d{10,11}$)/, "");
   if (digits.length < 8) return null;
   return digits.length === 10 || digits.length === 11 ? `55${digits}` : digits;
 }
+
+/**
+ * Brazilian mobile (DDD + 9 + 8 digits): our proxy for "reachable on WhatsApp".
+ * ponytail: landlines on WhatsApp Business are missed; add an explicit flag if that matters.
+ */
+export const isMobilePhone = (raw: string | null | undefined) => /^55\d{2}9\d{8}$/.test(normalizePhone(raw) ?? "");
 
 /** "https://www.Example.com.br/x" → "example.com.br". Invalid → null. */
 export function normalizeDomain(url: string | null | undefined): string | null {

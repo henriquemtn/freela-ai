@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { configuredProvider } from "@/discovery/config";
 import { PROVIDER_LABEL, RUN_STATUS_LABEL } from "@/discovery/labels";
 import { db } from "@/lib/db";
@@ -46,8 +45,8 @@ export default async function DiscoveryPage() {
               <Input name="area" required defaultValue="Florianópolis, SC" />
             </Label>
             <Label className="grid gap-1.5">
-              Termos (um por linha ou separados por vírgula)
-              <Textarea name="terms" required rows={2} placeholder="clínica odontológica, barbearia, padaria" />
+              Termos (separados por vírgula)
+              <Input name="terms" required placeholder="clínica odontológica, barbearia, padaria" />
             </Label>
             <Button type="submit">Buscar</Button>
           </form>

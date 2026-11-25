@@ -152,10 +152,8 @@ export default async function CompanyPage({ params }: PageProps<"/companies/[id]
           <OutreachCard
             companyId={id}
             templates={templates.map(({ id, name, body }) => ({ id, name, body }))}
-            defaultTemplateId={
-              (findings?.opportunities.length ? templates.find((t) => t.body.includes("{oportunidade}"))?.id : undefined) ??
-              pickTemplate(templates, c.websiteStatus)?.id
-            }
+            // ponytail: "offer a preview" (seeded id) is always the default; falls back if it was deleted.
+            defaultTemplateId={templates.find((t) => t.id === "tpl_no_site_offer")?.id ?? pickTemplate(templates, c.websiteStatus)?.id}
             vars={outreachVars(c, c.contacts, {
               opportunity: findings?.opportunities[0]?.title,
               service: findings?.suggestedServices[0]?.service,
