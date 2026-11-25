@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { runClaude } from "@/lib/claude";
 import { configuredProvider } from "./config";
-import { normalizeName } from "./normalize";
+import { isMobilePhone, normalizeName } from "./normalize";
 
 export type SearchInput = { area: string; term: string };
 
@@ -39,11 +39,11 @@ export const claudeDiscoverySchema = z.object({
         address: nullableText,
         city: nullableText.describe("Municipality name only, e.g. Florianópolis (neighborhood goes in address)"),
         state: nullableText.describe("Two-letter Brazilian state code, e.g. SC"),
-        phone: nullableText.describe("Public business phone exactly as published"),
+        phone: nullableText.describe("Public business WhatsApp/mobile number exactly as published"),
         websiteUrl: nullableText.describe("Official standalone website, or null (social profiles don't count)"),
+        instagramUrl: nullableText.describe("The business's own Instagram profile URL, if seen"),
         // Required by the prompt; checked in toFoundPlaces so one bad entry doesn't sink the whole (paid) search.
-        instagramUrl: nullableText.describe("The business's own Instagram profile URL"),
-        activityEvidence: nullableText.describe("Dated evidence it operated in the last 60 days, e.g. 'post de 12/11/2026 indexado no Google'"),
+        activityEvidence: nullableText.describe("Concrete signals it is operating, e.g. 'horário de funcionamento no Google, 79 avaliações, última em 10/2026'"),
         sourceUrl: z.string().trim().min(1).describe("Page where this business was found"),
       }),
     )
@@ -57,20 +57,20 @@ export function discoveryPrompt({ area, term }: SearchInput) {
 Task: find ${MAX_RESULTS} real, currently operating businesses matching "${term}" in ${area}, Brazil.
 
 How to search:
-- Run several searches, not just one: vary neighborhoods of the area, synonyms of the term, and search Instagram directly (e.g. site:instagram.com "${term}" ${area}).
+- Run several searches, not just one: vary neighborhoods of the area, synonyms of the term, maps/listing pages and the businesses' own social profiles.
 - Aim for ${MAX_RESULTS} businesses. Stop earlier only if searches stop turning up new ones.
 - Prioritize businesses with no evident standalone website: they are the main target. Still include others that pass the filters.
 
 Hard filters (skip the business if either fails):
-1. It has its own Instagram profile (instagramUrl). Not a personal profile, not a fan page, not a franchise HQ account.
-2. It is ACTIVE: dated evidence it operated in the last 60 days (recent Instagram post or story highlight date, recent Google review, recent news or event). Describe it with the date in activityEvidence. Follower counts or an old post are not evidence of activity. If you cannot see a date, skip the business.
+1. It publishes a WhatsApp or mobile number (Brazilian mobile: DDD + 9 digits starting with 9), on a listing, its social bio or a wa.me link. Put it in phone. Landline-only businesses are skipped.
+2. It appears to be ACTIVE (currently operating). Rely on what search results and listings show: opening hours on a maps/listing page, recent reviews, a recent post or event visible in a snippet, a bio with a current address and contact. Skip it if marked "permanently closed" or if every signal is clearly years old. In activityEvidence, state the concrete signal(s) you saw, with a date when one is visible.
 
 Rules:
 - Only include businesses you actually found in search results or pages. Never invent names, phones, addresses or URLs.
 - For each business, give the page where you found it as sourceUrl.
 - websiteUrl: the business's official standalone website if one is evident; otherwise null. Do not put social profiles here. Do not guess domains.
-- instagramUrl: the business's Instagram profile URL exactly as found. Do not guess handles.
-- phone: only a public business phone exactly as published; otherwise null.
+- instagramUrl: the business's Instagram profile URL if you saw it; otherwise null. Do not guess handles.
+- phone: the public business WhatsApp/mobile number exactly as published; prefer it over a landline.
 - city is the municipality name only (no neighborhood, no notes); put the neighborhood in address.
 - Use null for any field you could not confirm.
 - Skip directories, aggregators and franchise headquarters as entries; list the local business itself.
@@ -89,17 +89,21 @@ export function claudeProvider(model = process.env.FREELA_CLAUDE_MODEL || "sonne
         timeoutMs: 8 * 60_000,
         model,
       });
-      console.info(`[claude] "${input.term}": ${output.businesses.length} resultados, ${turns ?? "?"} turnos, US$ ${costUsd?.toFixed(2) ?? "?"}`);
-      return toFoundPlaces(output, input);
+      const places = toFoundPlaces(output, input);
+      console.info(
+        `[claude] "${input.term}": ${places.length}/${output.businesses.length} com WhatsApp e atividade, ${turns ?? "?"} turnos, US$ ${costUsd?.toFixed(2) ?? "?"}`,
+      );
+      if (output.limitations.length) console.info(`[claude] limitações: ${output.limitations.join(" | ")}`);
+      return places;
     },
   };
 }
 
 const withScheme = (url: string | null) => (url && !/^https?:\/\//i.test(url) ? `https://${url}` : url);
 
-/** Keeps only businesses with an Instagram profile and evidence of recent activity. */
+/** Keeps only businesses with a WhatsApp/mobile number and evidence they are operating. */
 export function toFoundPlaces(output: z.output<typeof claudeDiscoverySchema>, input: SearchInput): FoundPlace[] {
-  const qualifies = (b: (typeof output.businesses)[number]) => /instagram\.com\/[\w.]+/i.test(b.instagramUrl ?? "") && !!b.activityEvidence;
+  const qualifies = (b: (typeof output.businesses)[number]) => isMobilePhone(b.phone) && !!b.activityEvidence;
   return output.businesses.filter(qualifies).map((b) => ({
     ...b,
     websiteUrl: withScheme(b.websiteUrl),
@@ -132,10 +136,10 @@ export const sampleProvider: DiscoveryProvider = {
       address: `Rua Exemplo, ${100 + i * 10} - ${city}`,
       city,
       state,
-      phone: i % 2 ? null : `(48) 3000-${String(1000 + i).slice(-4)}`,
+      phone: `(48) 99000-${String(1000 + i).slice(-4)}`,
       websiteUrl: v.site,
       sourceUrl: null,
-      instagramUrl: `https://instagram.com/${slug}.${i}`,
+      instagramUrl: i % 2 ? `https://instagram.com/${slug}.${i}` : null,
       activityEvidence: "[Exemplo] post recente fictício",
     }));
   },

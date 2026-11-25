@@ -138,7 +138,7 @@ export function OutreachCard({
           <div className="space-y-2 rounded-xl border border-border p-3 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Enviei por</span>
-              <select name="channel" defaultValue={(websiteStatus === "social_only" || !wa) && instagram ? "instagram" : "whatsapp"} className={`${selectCls} h-8 w-36`}>
+              <select name="channel" defaultValue={!wa && instagram ? "instagram" : "whatsapp"} className={`${selectCls} h-8 w-36`}>
                 <option value="whatsapp">WhatsApp</option>
                 <option value="instagram">Instagram</option>
                 <option value="email">E-mail</option>

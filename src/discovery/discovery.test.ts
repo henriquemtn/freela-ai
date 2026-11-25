@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { matchCompany, type CompanyKey } from "./dedupe";
-import { isSocialUrl, normalizeDomain, normalizeName, normalizePhone, presenceFromListing, websiteKey } from "./normalize";
+import { isMobilePhone, isSocialUrl, normalizeDomain, normalizeName, normalizePhone, presenceFromListing, websiteKey } from "./normalize";
 import { claudeDiscoverySchema, toFoundPlaces } from "./providers";
 import { preScore } from "./prescore";
 
@@ -11,6 +11,10 @@ describe("normalize", () => {
     expect(normalizePhone("+55 48 3333-4444")).toBe("554833334444");
     expect(normalizePhone("123")).toBeNull();
     expect(normalizePhone(null)).toBeNull();
+    expect(normalizePhone("(048) 99120-0826")).toBe("5548991200826");
+    expect(isMobilePhone("(48) 99120-0826")).toBe(true);
+    expect(isMobilePhone("+55 48 99120-0826")).toBe(true);
+    expect(isMobilePhone("(48) 3269-5995")).toBe(false);
   });
 
   it("domains", () => {
@@ -76,17 +80,17 @@ describe("Claude discovery output", () => {
     address: null,
     city: "Florianópolis",
     state: "SC",
-    phone: "(48) 3333-4444",
+    phone: "(48) 99133-4444",
     websiteUrl: null,
     instagramUrl: "instagram.com/padariasj",
     activityEvidence: "Post de 10/11/2026 indexado no Google",
     sourceUrl: "https://example.com/padaria",
   };
 
-  it("drops businesses without an Instagram profile or activity evidence", () => {
+  it("drops businesses without a WhatsApp/mobile number or activity evidence", () => {
     const kept = toFoundPlaces(
       {
-        businesses: [business, { ...business, instagramUrl: "https://facebook.com/x" }, { ...business, activityEvidence: null }],
+        businesses: [business, { ...business, phone: "(48) 3333-4444" }, { ...business, phone: null }, { ...business, activityEvidence: null }],
         limitations: [],
       },
       { area: "Florianópolis, SC", term: "padaria" },
